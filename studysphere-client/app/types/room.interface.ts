@@ -1,0 +1,15 @@
+export interface Room {
+    _id: string;
+    name: string;
+    description: string;
+    course: string;
+    ownerId: string,
+	inviteCode: string,
+	isPrivate: boolean,
+	capacity: number,
+
+	// canvasId: canvas
+	
+	members: string[],
+	createdAt: Date,
+}
