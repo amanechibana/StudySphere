@@ -15,4 +15,4 @@ const getCollectionFn = (collection: string) => {
 };
 
 // List collections here, e.g.:
-// export const rooms = getCollectionFn("rooms");
+export const rooms = getCollectionFn("rooms");
