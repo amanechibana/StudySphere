@@ -10,6 +10,7 @@ const router = Router();
 
 // GET /
 router.get("/", async (_req: Request, res: Response) => {
+  console.log("GET /rooms");
   try {
     const roomsCol = await rooms();
     const allRooms = await roomsCol.find().toArray();
@@ -25,6 +26,7 @@ router.get(
   "/:id",
   validateId,
   async (req: Request<{ id: string }>, res: Response) => {
+    console.log("GET /rooms/:id");
     try {
       const roomsCol = await rooms();
       const room = await roomsCol.findOne({ _id: new ObjectId(req.params.id) });
@@ -44,13 +46,10 @@ router.post(
   "/",
   validateRoomFields(true),
   async (req: Request, res: Response) => {
+    console.log("POST /rooms");
     try {
       const { name, description, course, ownerId, isPrivate, capacity } =
         req.body;
-
-      if (!name || !description || !course || !ownerId) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
 
       const newRoom: Omit<Room, "_id"> = {
         name,
@@ -81,6 +80,7 @@ router.put(
   validateId,
   validateRoomFields(false),
   async (req: Request<{ id: string }>, res: Response) => {
+    console.log("PUT /rooms/:id");
     try {
       const roomsCol = await rooms();
       const roomId = new ObjectId(req.params.id);
@@ -99,6 +99,12 @@ router.put(
         if (req.body[field] !== undefined) {
           updateData[field as keyof Room] = req.body[field];
         }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res
+          .status(400)
+          .json({ error: "No valid fields provided for update" });
       }
 
       const result = await roomsCol.findOneAndUpdate(
@@ -123,6 +129,7 @@ router.delete(
   "/:id",
   validateId,
   async (req: Request<{ id: string }>, res: Response) => {
+    console.log("DELETE /rooms/:id");
     try {
       const roomsCol = await rooms();
       const roomId = new ObjectId(req.params.id);
