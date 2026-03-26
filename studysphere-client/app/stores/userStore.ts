@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { User } from "../types/User.interface";
+import { User } from "../types/user.interface";
 
 const dummyUser: User = {
   _id: "dummy",
