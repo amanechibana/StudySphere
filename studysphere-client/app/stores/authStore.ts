@@ -1,6 +1,7 @@
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { create } from "zustand";
 import { auth } from "../firebase/firebaseSetup";
+import { firebaseSignOut } from "../firebase/firebaseMethods";
 
 interface InitActions {
   onLogin: (user: User) => void;
@@ -24,7 +25,7 @@ const useAuthStore = create<AuthState>((set) => ({
   setUser: (user) => set({ user }),
 
   logout: async () => {
-    await signOut(auth);
+    await firebaseSignOut();
     set({ user: null });
   },
 

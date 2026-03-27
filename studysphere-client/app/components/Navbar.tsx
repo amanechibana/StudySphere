@@ -1,6 +1,5 @@
 import Link from "next/link";
-import useUserStore from "../stores/userStore";
-import { ROOMS } from "../dummyData/dummyRooms";
+import useAuthStore from "../stores/authStore";
 
 interface NavbarProps {
   backHref?: string;
@@ -8,14 +7,16 @@ interface NavbarProps {
   roomSubtitle?: string;
 }
 
-const dummyRoom = ROOMS[0];
-
 export default function Navbar({
   backHref,
   roomName,
   roomSubtitle,
 }: NavbarProps) {
-  const { user } = useUserStore();
+  const { user, logout, initialized } = useAuthStore();
+
+  async function handleLogout() {
+    await logout();
+  }
 
   return (
     <nav className="bg-surface border-b border-border px-6 py-4 flex items-center justify-between">
@@ -51,7 +52,6 @@ export default function Navbar({
         )}
       </div>
 
-      {/* Right: online count + avatar */}
       {/* <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 border border-border rounded-full px-3 py-1.5 text-sm text-espresso-muted bg-surface-card">
           <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
@@ -61,6 +61,21 @@ export default function Navbar({
           {user.username}
         </div>
       </div> */}
+      {!initialized ? null : user ? (
+        <button
+          className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
+          onClick={handleLogout}
+        >
+          Sign out
+        </button>
+      ) : (
+        <Link
+          href="/login"
+          className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
+        >
+          Sign in
+        </Link>
+      )}
     </nav>
   );
 }

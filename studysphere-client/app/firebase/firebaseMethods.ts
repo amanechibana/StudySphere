@@ -15,7 +15,7 @@ async function firebaseCreateUserWithEmailAndPassword(
   email: string,
   password: string,
 ) {
-  await createUserWithEmailAndPassword(auth, email, password);
+  return await createUserWithEmailAndPassword(auth, email, password);
 }
 
 async function firebaseChangePassword(
@@ -60,5 +60,6 @@ export {
     firebaseChangePassword,
     firebaseSignInWithEmailAndPassword,
     firebaseGoogleSignIn,
-    firebasePasswordReset
+    firebasePasswordReset,
+    firebaseSignOut
 }
