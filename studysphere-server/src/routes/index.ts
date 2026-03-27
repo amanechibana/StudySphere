@@ -9,7 +9,7 @@ const constructorMethod = (app: Application) => {
   app.use("/rooms", roomRoutes);
 
   app.use(/(.*)/, (_req, res) => {
-    res.sendStatus(404);
+    res.sendStatus(404).json({ error: "Route not found" });
   });
 };
 
