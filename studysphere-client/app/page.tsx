@@ -84,7 +84,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Filter bar */}
+        
         <div className="mb-8 flex flex-col gap-4">
           {/* Search + actions */}
           <div className="flex gap-3 items-center">
@@ -114,7 +114,7 @@ export default function HomePage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                // TODO: validate invite code and join room
+                // TODO: validate invite code and join room on a handler
               }}
               className="flex gap-3 items-center"
             >
@@ -136,7 +136,7 @@ export default function HomePage() {
             </form>
           )}
 
-          {/* Course chips */}
+          {/* filter chips */}
           <div>
             <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-2">
               Filter by course
@@ -159,7 +159,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Room grid */}
         <div>
           <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-4">
             Open study rooms
@@ -221,7 +220,7 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  {/* Inline code input for private rooms */}
+                  {/* code input foir private room */}
                   {room.isPrivate && expandedCodeRoom === room._id && (
                     <form
                       onSubmit={(e) => {

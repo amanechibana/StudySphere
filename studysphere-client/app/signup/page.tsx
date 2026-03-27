@@ -2,35 +2,71 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { firebaseCreateUserWithEmailAndPassword } from "../firebase/firebaseMethods";
+import { signupSchema } from "../validation/authSchema";
 
 export default function SignupPage() {
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSignup(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: connect to auth
+    setError(null);
+
+    const res = signupSchema.safeParse({ email, password, confirmPassword });
+    if (!res.success) {
+      setError(res.error.issues[0].message);
+      return;
+    }
+
+    //sign up with firebase first, then try mongo and rollback if it fails
+    try {
+      const firebaseUserCredential =
+        await firebaseCreateUserWithEmailAndPassword(email, password);
+      try {
+        // TODO: do mongodb call to create user document
+      } catch (err) {
+        await firebaseUserCredential.user.delete();
+        setError("Something went wrong, please try again");
+      }
+
+      console.log(firebaseUserCredential);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      console.error("Error signing up:", err);
+      setError(errorMessage);
+    }
   }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="flex items-center justify-center gap-1.5 mb-8">
           <span className="text-2xl">☕</span>
-          <span className="font-bold text-espresso text-xl tracking-tight">Study</span>
+          <span className="font-bold text-espresso text-xl tracking-tight">
+            Study
+          </span>
           <span className="font-serif italic text-caramel text-xl">Sphere</span>
         </div>
 
-        {/* Card */}
         <div className="bg-surface-card border border-border rounded-2xl p-8 shadow-sm">
-          <h2 className="text-2xl font-semibold text-espresso mb-1">Create an account</h2>
-          <p className="text-sm text-caramel italic mb-6">Your study rooms are waiting.</p>
+          <h2 className="text-2xl font-semibold text-espresso mb-1">
+            Create an account
+          </h2>
+          <p className="text-sm text-caramel italic mb-6">
+            Your study rooms are waiting.
+          </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSignup} className="flex flex-col gap-4">
+            {/* Converting to onboarding type of app 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-espresso-muted" htmlFor="username">
+              <label
+                className="text-sm font-medium text-espresso-muted"
+                htmlFor="username"
+              >
                 Username
               </label>
               <input
@@ -43,10 +79,13 @@ export default function SignupPage() {
                 placeholder="scholar42"
                 className="bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-espresso placeholder:text-border outline-none focus:border-caramel transition-colors"
               />
-            </div>
+            </div> */}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-espresso-muted" htmlFor="email">
+              <label
+                className="text-sm font-medium text-espresso-muted"
+                htmlFor="email"
+              >
                 Email
               </label>
               <input
@@ -55,14 +94,20 @@ export default function SignupPage() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setError(null);
+                  setEmail(e.target.value);
+                }}
                 placeholder="example@email.com"
                 className="bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-espresso placeholder:text-border outline-none focus:border-caramel transition-colors"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-espresso-muted" htmlFor="password">
+              <label
+                className="text-sm font-medium text-espresso-muted"
+                htmlFor="password"
+              >
                 Password
               </label>
               <input
@@ -71,7 +116,32 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setError(null);
+                  setPassword(e.target.value);
+                }}
+                placeholder="••••••••"
+                className="bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-espresso placeholder:text-border outline-none focus:border-caramel transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                className="text-sm font-medium text-espresso-muted"
+                htmlFor="confirmPassword"
+              >
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={confirmPassword}
+                onChange={(e) => {
+                  setError(null);
+                  setConfirmPassword(e.target.value);
+                }}
                 placeholder="••••••••"
                 className="bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-espresso placeholder:text-border outline-none focus:border-caramel transition-colors"
               />
@@ -83,12 +153,17 @@ export default function SignupPage() {
             >
               Create account
             </button>
+
+            {error && <p className="text-red-500">{error}</p>}
           </form>
         </div>
 
         <p className="text-center text-sm text-espresso-muted mt-4">
           Already have an account?{" "}
-          <Link href="/login" className="text-caramel hover:underline font-medium">
+          <Link
+            href="/login"
+            className="text-caramel hover:underline font-medium"
+          >
             Sign in
           </Link>
         </p>
