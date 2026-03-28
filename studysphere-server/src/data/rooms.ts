@@ -27,7 +27,7 @@ async function createRoom(room: NewRoom) {
 async function updateRoom(
   id: RoomId,
   partial: Partial<NewRoom>,
-): Promise<WithId<Document> | null> {
+): Promise<WithId<NewRoom> | null> {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
 
@@ -40,7 +40,8 @@ async function updateRoom(
     { $set: write },
     { returnDocument: "after" },
   );
-  return result?.value ?? null;
+
+  return result ?? null;
 }
 
 async function deleteRoom(id: RoomId) {
@@ -54,7 +55,7 @@ async function deleteRoom(id: RoomId) {
 async function joinPublicRoom(
   id: RoomId,
   userId: UserId,
-): Promise<WithId<Document> | null> {
+): Promise<WithId<NewRoom> | null> {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
   const result = await roomsCollection.findOneAndUpdate(
@@ -62,16 +63,15 @@ async function joinPublicRoom(
     { $addToSet: { members: userId } },
     { returnDocument: "after" },
   );
-  const newRoom = result?.value;
-
-  return newRoom ?? null;
+  
+  return result ?? null;
 }
 
 async function joinPrivateRoom(
   id: RoomId,
   userId: UserId,
   inviteCode: string,
-): Promise<WithId<Document> | null> {
+): Promise<WithId<NewRoom> | null> {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
   const result = await roomsCollection.findOneAndUpdate(
@@ -79,15 +79,14 @@ async function joinPrivateRoom(
     { $addToSet: { members: userId } },
     { returnDocument: "after" },
   );
-  const newRoom = result?.value;
-
-  return newRoom ?? null;
+  
+  return result ?? null;
 }
 
 async function leaveRoom(
   id: RoomId,
   userId: UserId,
-): Promise<WithId<Document> | null> {
+): Promise<WithId<NewRoom> | null> {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
   const result = await roomsCollection.findOneAndUpdate(
@@ -95,9 +94,8 @@ async function leaveRoom(
     { $pull: { members: userId } } as unknown as UpdateFilter<Document>,
     { returnDocument: "after" },
   );
-  const newRoom = result?.value;
-
-  return newRoom ?? null;
+  
+  return result ?? null;
 }
 
 export {
