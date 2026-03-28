@@ -6,6 +6,9 @@ import {
   createRoom,
   updateRoom,
   deleteRoom,
+  joinPublicRoom,
+  leaveRoom,
+  joinPrivateRoom,
 } from "../data/rooms.js";
 import type { NewRoom } from "../types/room.interface.js";
 import validateId from "../middleware/validateId.js";
@@ -13,6 +16,7 @@ import {
   validateRoomFields,
   validatePartialRoomFields,
 } from "../middleware/validateFields.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
