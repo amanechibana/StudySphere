@@ -64,7 +64,7 @@ export default function RoomCard({ room, handleJoinRoom }: {
                 )}
             </div>
 
-            {/* code input foir private room */}
+            {/* code input for private room */}
             {room.isPrivate && expandedCodeRoom === room._id && (
             <form
                 onSubmit={(e) => {
