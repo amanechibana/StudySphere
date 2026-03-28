@@ -1,16 +1,18 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { 
+import {
   getRooms,
   getRoomById,
   createRoom,
   updateRoom,
-  deleteRoom
-
+  deleteRoom,
 } from "../data/rooms.js";
-import type { NewRoom } from "../types/room.interface.ts";
+import type { NewRoom } from "../types/room.interface.js";
 import validateId from "../middleware/validateId.js";
-import { validateRoomFields } from "../middleware/validateFields.js";
+import {
+  validateRoomFields,
+  validatePartialRoomFields,
+} from "../middleware/validateFields.js";
 
 const router = Router();
 
@@ -62,7 +64,7 @@ router.post(
         course,
         ownerId,
         inviteCode: Math.random().toString(36).substring(2, 5).toUpperCase(),
-        isPrivate: !!isPrivate,
+        isPrivate: isPrivate,
         capacity: capacity || 0,
         members: [],
         createdAt: new Date(),
@@ -78,42 +80,22 @@ router.post(
   },
 );
 
-// PUT /:id — full replace (body must be a complete `NewRoom`)
-router.put(
+// PATCH /:id — partial update
+router.patch(
   "/:id",
   validateId,
-  validateRoomFields,
+  validatePartialRoomFields,
   async (req: Request<{ id: string }>, res: Response) => {
-    console.log(`PUT /rooms/${req.params.id}`);
+    console.log(`PATCH /rooms/${req.params.id}`);
     try {
-      const {
-        name,
-        description,
-        course,
-        ownerId,
-        isPrivate,
-        capacity,
-        inviteCode,
-        members,
-        createdAt,
-      } = req.body;
+      const updatedRoom = await updateRoom(
+        req.params.id,
+        req.body as Partial<NewRoom>,
+      );
 
-      const newRoom: NewRoom = {
-        name,
-        description,
-        course,
-        ownerId,
-        inviteCode,
-        isPrivate,
-        capacity,
-        members,
-        createdAt: new Date(createdAt),
-      };
-
-      const roomId = req.params.id;
-      const updatedRoom = await updateRoom(roomId, newRoom);
-
-      if (!updatedRoom) return res.status(404).json({ error: "Room not found" });
+      if (!updatedRoom) {
+        return res.status(404).json({ error: "Room not found" });
+      }
 
       res.json(updatedRoom);
     } catch (err) {

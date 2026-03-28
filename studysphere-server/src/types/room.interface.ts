@@ -1,5 +1,7 @@
+export type RoomId = string;
+
 export interface Room {
-  _id: string;
+  _id: RoomId;
   name: string;
   description: string;
   course: string;

@@ -1,6 +1,7 @@
-import { ObjectId } from "mongodb";
+import { ObjectId, type Document, type UpdateFilter, type WithId } from "mongodb";
 import { rooms } from "../config/mongoCollections.js";
-import type { NewRoom } from "../types/room.interface.js";
+import type { RoomId, NewRoom } from "../types/room.interface.js";
+import type { UserId } from "../types/user.interface.js";
 
 async function getRooms() {
   const roomsCollection = await rooms();
@@ -9,7 +10,7 @@ async function getRooms() {
   return allRooms;
 }
 
-async function getRoomById(id: string) {
+async function getRoomById(id: RoomId) {
   const roomsCollection = await rooms();
   const room = await roomsCollection.findOne({ _id: new ObjectId(id) });
 
@@ -23,20 +24,26 @@ async function createRoom(room: NewRoom) {
   return { _id: result.insertedId, ...room };
 }
 
-async function updateRoom(id: string, room: NewRoom) {
+async function updateRoom(
+  id: RoomId,
+  partial: Partial<NewRoom>,
+): Promise<WithId<Document> | null> {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
-  const result = await roomsCollection.findOneAndReplace(
+
+  const write = Object.fromEntries(
+    Object.entries(partial as object).filter(([, v]) => v !== undefined),
+  ) as Record<string, unknown>;
+
+  const result = await roomsCollection.findOneAndUpdate(
     { _id: roomId },
-    { _id: roomId, ...room },
+    { $set: write },
     { returnDocument: "after" },
   );
-  const newRoom = result?.value;
-
-  return newRoom ?? null;
+  return result?.value ?? null;
 }
 
-async function deleteRoom(id: string) {
+async function deleteRoom(id: RoomId) {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
   const result = await roomsCollection.deleteOne({ _id: roomId });
@@ -44,10 +51,62 @@ async function deleteRoom(id: string) {
   return result.deletedCount > 0;
 }
 
-export { 
+async function joinPublicRoom(
+  id: RoomId,
+  userId: UserId,
+): Promise<WithId<Document> | null> {
+  const roomsCollection = await rooms();
+  const roomId = new ObjectId(id);
+  const result = await roomsCollection.findOneAndUpdate(
+    { _id: roomId },
+    { $addToSet: { members: userId } },
+    { returnDocument: "after" },
+  );
+  const newRoom = result?.value;
+
+  return newRoom ?? null;
+}
+
+async function joinPrivateRoom(
+  id: RoomId,
+  userId: UserId,
+  inviteCode: string,
+): Promise<WithId<Document> | null> {
+  const roomsCollection = await rooms();
+  const roomId = new ObjectId(id);
+  const result = await roomsCollection.findOneAndUpdate(
+    { _id: roomId, inviteCode },
+    { $addToSet: { members: userId } },
+    { returnDocument: "after" },
+  );
+  const newRoom = result?.value;
+
+  return newRoom ?? null;
+}
+
+async function leaveRoom(
+  id: RoomId,
+  userId: UserId,
+): Promise<WithId<Document> | null> {
+  const roomsCollection = await rooms();
+  const roomId = new ObjectId(id);
+  const result = await roomsCollection.findOneAndUpdate(
+    { _id: roomId },
+    { $pull: { members: userId } } as unknown as UpdateFilter<Document>,
+    { returnDocument: "after" },
+  );
+  const newRoom = result?.value;
+
+  return newRoom ?? null;
+}
+
+export {
   getRoomById,
   createRoom,
   getRooms,
   updateRoom,
-  deleteRoom
+  deleteRoom,
+  joinPublicRoom,
+  joinPrivateRoom,
+  leaveRoom,
 };
