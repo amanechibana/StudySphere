@@ -1,18 +1,19 @@
 import type { Collection, Document } from "mongodb";
 import { dbConnection } from "./mongoConnection.js";
+import type { NewRoom } from "../types/room.interface.js";
 
-const getCollectionFn = (collection: string) => {
-  let _col: Collection<Document> | undefined;
+const getCollectionFn =
+  <T extends Document>(collection: string) => {
+    let _col: Collection<T> | undefined;
 
-  return async (): Promise<Collection<Document>> => {
-    if (!_col) {
-      const db = await dbConnection();
-      _col = db.collection(collection);
-    }
+    return async (): Promise<Collection<T>> => {
+      if (!_col) {
+        const db = await dbConnection();
+        _col = db.collection<T>(collection);
+      }
 
-    return _col;
+      return _col;
+    };
   };
-};
 
-// List collections here, e.g.:
-export const rooms = getCollectionFn("rooms");
+export const rooms = getCollectionFn<NewRoom>("rooms");
