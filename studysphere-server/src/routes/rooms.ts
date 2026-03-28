@@ -1,10 +1,16 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { ObjectId } from "mongodb";
-import { rooms } from "../config/mongoCollections.js";
-import type { Room } from "../types/room.interface.ts";
+import { 
+  getRooms,
+  getRoomById,
+  createRoom,
+  updateRoom,
+  deleteRoom
+
+} from "../data/rooms.js";
+import type { NewRoom } from "../types/room.interface.ts";
 import validateId from "../middleware/validateId.js";
-import validateRoomFields from "../middleware/validateFields.js";
+import { validateRoomFields } from "../middleware/validateFields.js";
 
 const router = Router();
 
@@ -12,8 +18,7 @@ const router = Router();
 router.get("/", async (_req: Request, res: Response) => {
   console.log("GET /rooms");
   try {
-    const roomsCol = await rooms();
-    const allRooms = await roomsCol.find().toArray();
+    const allRooms = await getRooms();
     res.json(allRooms);
   } catch (err) {
     console.error(err);
@@ -28,8 +33,8 @@ router.get(
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /rooms/${req.params.id}`);
     try {
-      const roomsCol = await rooms();
-      const room = await roomsCol.findOne({ _id: new ObjectId(req.params.id) });
+      const roomId = req.params.id;
+      const room = await getRoomById(roomId);
 
       if (!room) return res.status(404).json({ error: "Room not found" });
 
@@ -44,14 +49,14 @@ router.get(
 // POST /
 router.post(
   "/",
-  validateRoomFields(true),
+  validateRoomFields,
   async (req: Request, res: Response) => {
     console.log("POST /rooms");
     try {
       const { name, description, course, ownerId, isPrivate, capacity } =
         req.body;
 
-      const newRoom: Omit<Room, "_id"> = {
+      const newRoom: NewRoom = {
         name,
         description,
         course,
@@ -63,10 +68,9 @@ router.post(
         createdAt: new Date(),
       };
 
-      const roomsCol = await rooms();
-      const insertResult = await roomsCol.insertOne(newRoom);
+      const createdRoom = await createRoom(newRoom);
 
-      res.status(201).json({ _id: insertResult.insertedId, ...newRoom });
+      res.status(201).json(createdRoom);
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to create room" });
@@ -74,49 +78,44 @@ router.post(
   },
 );
 
-// PUT /:id
+// PUT /:id — full replace (body must be a complete `NewRoom`)
 router.put(
   "/:id",
   validateId,
-  validateRoomFields(false),
+  validateRoomFields,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`PUT /rooms/${req.params.id}`);
     try {
-      const roomsCol = await rooms();
-      const roomId = new ObjectId(req.params.id);
+      const {
+        name,
+        description,
+        course,
+        ownerId,
+        isPrivate,
+        capacity,
+        inviteCode,
+        members,
+        createdAt,
+      } = req.body;
 
-      const updateData: Partial<Room> = {};
-      const allowedFields = [
-        "name",
-        "description",
-        "course",
-        "isPrivate",
-        "capacity",
-        "members",
-      ];
+      const newRoom: NewRoom = {
+        name,
+        description,
+        course,
+        ownerId,
+        inviteCode,
+        isPrivate,
+        capacity,
+        members,
+        createdAt: new Date(createdAt),
+      };
 
-      for (const field of allowedFields) {
-        if (req.body[field] !== undefined) {
-          updateData[field as keyof Room] = req.body[field];
-        }
-      }
+      const roomId = req.params.id;
+      const updatedRoom = await updateRoom(roomId, newRoom);
 
-      if (Object.keys(updateData).length === 0) {
-        return res
-          .status(400)
-          .json({ error: "No valid fields provided for update" });
-      }
+      if (!updatedRoom) return res.status(404).json({ error: "Room not found" });
 
-      const result = await roomsCol.findOneAndUpdate(
-        { _id: roomId },
-        { $set: updateData },
-        { returnDocument: "after" },
-      );
-
-      if (!result?.value)
-        return res.status(404).json({ error: "Room not found" });
-
-      res.json(result.value);
+      res.json(updatedRoom);
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: "Invalid room ID or update failed" });
@@ -131,12 +130,11 @@ router.delete(
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`DELETE /rooms/${req.params.id}`);
     try {
-      const roomsCol = await rooms();
-      const roomId = new ObjectId(req.params.id);
-
-      const result = await roomsCol.deleteOne({ _id: roomId });
-      if (result.deletedCount === 0)
+      const roomId = req.params.id;
+      const deleted = await deleteRoom(roomId);
+      if (!deleted) {
         return res.status(404).json({ error: "Room not found" });
+      }
 
       res.sendStatus(204);
     } catch (err) {
