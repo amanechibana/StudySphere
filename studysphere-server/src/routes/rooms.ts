@@ -1,10 +1,22 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { ObjectId } from "mongodb";
-import { rooms } from "../config/mongoCollections.js";
-import type { Room } from "../types/room.interface.ts";
+import {
+  getRooms,
+  getRoomById,
+  createRoom,
+  updateRoom,
+  deleteRoom,
+  joinPublicRoom,
+  leaveRoom,
+  joinPrivateRoom,
+} from "../data/rooms.js";
+import type { NewRoom } from "../types/room.interface.js";
 import validateId from "../middleware/validateId.js";
-import validateRoomFields from "../middleware/validateFields.js";
+import {
+  validateRoomFields,
+  validatePartialRoomFields,
+} from "../middleware/validateFields.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -12,9 +24,8 @@ const router = Router();
 router.get("/", async (_req: Request, res: Response) => {
   console.log("GET /rooms");
   try {
-    const roomsCol = await rooms();
-    const allRooms = await roomsCol.find().toArray();
-    res.json(allRooms);
+    const allRooms = await getRooms();
+    res.status(200).json(allRooms);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch rooms" });
@@ -26,14 +37,15 @@ router.get(
   "/:id",
   validateId,
   async (req: Request<{ id: string }>, res: Response) => {
-    console.log("GET /rooms/:id");
+    console.log(`GET /rooms/${req.params.id}`);
     try {
-      const roomsCol = await rooms();
-      const room = await roomsCol.findOne({ _id: new ObjectId(req.params.id) });
+      const roomId = req.params.id;
+      const room = await getRoomById(roomId);
+      if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
 
-      if (!room) return res.status(404).json({ error: "Room not found" });
-
-      res.json(room);
+      res.status(200).json(room);
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: "Invalid room ID" });
@@ -44,29 +56,28 @@ router.get(
 // POST /
 router.post(
   "/",
-  validateRoomFields(true),
+  validateRoomFields,
   async (req: Request, res: Response) => {
     console.log("POST /rooms");
     try {
       const { name, description, course, ownerId, isPrivate, capacity } =
         req.body;
 
-      const newRoom: Omit<Room, "_id"> = {
+      const newRoom: NewRoom = {
         name,
         description,
         course,
         ownerId,
         inviteCode: Math.random().toString(36).substring(2, 5).toUpperCase(),
-        isPrivate: !!isPrivate,
+        isPrivate: isPrivate,
         capacity: capacity || 0,
         members: [],
         createdAt: new Date(),
       };
 
-      const roomsCol = await rooms();
-      const insertResult = await roomsCol.insertOne(newRoom);
+      const createdRoom = await createRoom(newRoom);
 
-      res.status(201).json({ _id: insertResult.insertedId, ...newRoom });
+      res.status(201).json(createdRoom);
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to create room" });
@@ -74,49 +85,23 @@ router.post(
   },
 );
 
-// PUT /:id
-router.put(
+// PATCH /:id — partial update
+router.patch(
   "/:id",
   validateId,
-  validateRoomFields(false),
+  validatePartialRoomFields,
   async (req: Request<{ id: string }>, res: Response) => {
-    console.log("PUT /rooms/:id");
+    console.log(`PATCH /rooms/${req.params.id}`);
     try {
-      const roomsCol = await rooms();
-      const roomId = new ObjectId(req.params.id);
-
-      const updateData: Partial<Room> = {};
-      const allowedFields = [
-        "name",
-        "description",
-        "course",
-        "isPrivate",
-        "capacity",
-        "members",
-      ];
-
-      for (const field of allowedFields) {
-        if (req.body[field] !== undefined) {
-          updateData[field as keyof Room] = req.body[field];
-        }
-      }
-
-      if (Object.keys(updateData).length === 0) {
-        return res
-          .status(400)
-          .json({ error: "No valid fields provided for update" });
-      }
-
-      const result = await roomsCol.findOneAndUpdate(
-        { _id: roomId },
-        { $set: updateData },
-        { returnDocument: "after" },
+      const updatedRoom = await updateRoom(
+        req.params.id,
+        req.body as Partial<NewRoom>,
       );
-
-      if (!result?.value)
+      if (!updatedRoom) {
         return res.status(404).json({ error: "Room not found" });
+      }
 
-      res.json(result.value);
+      res.status(200).json(updatedRoom);
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: "Invalid room ID or update failed" });
@@ -129,19 +114,84 @@ router.delete(
   "/:id",
   validateId,
   async (req: Request<{ id: string }>, res: Response) => {
-    console.log("DELETE /rooms/:id");
+    console.log(`DELETE /rooms/${req.params.id}`);
     try {
-      const roomsCol = await rooms();
-      const roomId = new ObjectId(req.params.id);
-
-      const result = await roomsCol.deleteOne({ _id: roomId });
-      if (result.deletedCount === 0)
+      const roomId = req.params.id;
+      const deleted = await deleteRoom(roomId);
+      if (!deleted) {
         return res.status(404).json({ error: "Room not found" });
+      }
 
       res.sendStatus(204);
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: "Invalid room ID" });
+    }
+  },
+);
+
+// POST /join/:id — public room join (`req.user` from auth; placeholder until then)
+router.post(
+  "/join/:id",
+  validateId,
+  requireAuth,
+  async (req: Request<{ id: string }>, res: Response) => {
+    console.log(`POST /rooms/join/${req.params.id}`);
+    try {
+      const userId = req.user?._id;
+      if (!userId) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const roomId = req.params.id;
+      const room = await getRoomById(roomId);
+      if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
+
+      // check to see if the room is public or private
+      if (room.isPrivate) {
+        const joinedRoom = await joinPrivateRoom(roomId, userId, req.body.inviteCode);
+        if (!joinedRoom) {
+          return res.status(404).json({ error: "Failed to join room" });
+        }
+        res.status(200).json(joinedRoom);
+      } else {
+        const joinedRoom = await joinPublicRoom(roomId, userId);
+        if (!joinedRoom) {
+          return res.status(404).json({ error: "Failed to join room" });
+        }
+        res.status(200).json(joinedRoom);
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(400).json({ error: "Invalid room ID or join failed" });
+    }
+  },
+);
+
+// POST /leave/:id — public room leave (`req.user` from auth; placeholder until then)
+router.post(
+  "/leave/:id",
+  validateId,
+  requireAuth,
+  async (req: Request<{ id: string }>, res: Response) => {
+    console.log(`POST /rooms/leave/${req.params.id}`);
+    try {
+      const userId = req.user?._id;
+      if (!userId) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      const roomId = req.params.id;
+      const leftRoom = await leaveRoom(roomId, userId);
+      if (!leftRoom) {
+        return res.status(404).json({ error: "Failed to leave room" });
+      }
+      res.json(leftRoom);
+    } catch (err) {
+      console.error(err);
+      res.status(400).json({ error: "Invalid room ID or join failed" });
     }
   },
 );
