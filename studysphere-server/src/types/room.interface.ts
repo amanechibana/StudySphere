@@ -4,7 +4,7 @@ export interface Room {
   description: string;
   course: string;
   ownerId: string;
-  inviteCode: string;
+  inviteCode: string | null;
   isPrivate: boolean;
   capacity: number;
 
@@ -13,3 +13,6 @@ export interface Room {
   members: string[];
   createdAt: Date;
 }
+
+// room fields for insert — MongoDB assigns `_id`
+export type NewRoom = Omit<Room, "_id">;
