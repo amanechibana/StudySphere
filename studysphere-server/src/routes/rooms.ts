@@ -172,7 +172,7 @@ router.post(
 
 // POST /leave/:id — public room leave (`req.user` from auth; placeholder until then)
 router.post(
-  "/join/:id",
+  "/leave/:id",
   validateId,
   requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
