@@ -176,7 +176,7 @@ router.post(
   validateId,
   requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
-    console.log(`POST /rooms/join/${req.params.id}`);
+    console.log(`POST /rooms/leave/${req.params.id}`);
     try {
       const userId = req.user?._id;
       if (!userId) {
