@@ -6,7 +6,6 @@ import Navbar from "./components/Navbar";
 import { ROOMS } from "./dummyData/dummyRooms";
 import useUserStore from "./stores/userStore";
 import RoomCard from "./components/RoomCard";
-import { Room } from "./types/room.interface";
 
 const COURSES = [
   "All",
@@ -20,6 +19,8 @@ const COURSES = [
 export default function HomePage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [showInviteInput, setShowInviteInput] = useState(false);
 
   const { user } = useUserStore();
 
@@ -36,13 +37,8 @@ export default function HomePage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  async function handleJoinRoom(room: Room, inviteCode?: string | null) {
-    const canJoin = room.capacity > room.members.length;
-    if (!canJoin) {
-      alert("Room is full");
-      return;
-    }
-    const response = await fetch(`/api/rooms/join/${room._id}`, {
+  async function handleJoinRoom(roomId: string, inviteCode?: string | null) {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/join/${roomId}`, {
       method: "POST",
       body: JSON.stringify({ inviteCode }),
     });
@@ -121,7 +117,7 @@ export default function HomePage() {
                 <RoomCard 
                   key={room._id}
                   room={room}
-                  handleJoinRoom={handleJoinRoom}
+                  handleJoinRoom={() => handleJoinRoom(room._id)}
                 />
               ))
             ) : (

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 export default function RoomCard({ room, handleJoinRoom }: {
     room: Room,
-    handleJoinRoom: (room: Room, inviteCode?: string) => void
+    handleJoinRoom: (roomId: string, inviteCode?: string) => void
 }) {
     const [expandedCodeRoom, setExpandedCodeRoom] = useState<string | null>(null);
     const [roomCode, setRoomCode] = useState("");
@@ -83,6 +83,7 @@ export default function RoomCard({ room, handleJoinRoom }: {
                 />
                 <button
                     type="submit"
+                    onClick={handleJoinRoom}
                     className="bg-caramel text-white text-sm font-semibold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
                 >
                     Join →
