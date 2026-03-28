@@ -25,7 +25,7 @@ router.get("/", async (_req: Request, res: Response) => {
   console.log("GET /rooms");
   try {
     const allRooms = await getRooms();
-    res.json(allRooms);
+    res.status(200).json(allRooms);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch rooms" });
@@ -41,10 +41,11 @@ router.get(
     try {
       const roomId = req.params.id;
       const room = await getRoomById(roomId);
+      if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
 
-      if (!room) return res.status(404).json({ error: "Room not found" });
-
-      res.json(room);
+      res.status(200).json(room);
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: "Invalid room ID" });
@@ -96,12 +97,11 @@ router.patch(
         req.params.id,
         req.body as Partial<NewRoom>,
       );
-
       if (!updatedRoom) {
         return res.status(404).json({ error: "Room not found" });
       }
 
-      res.json(updatedRoom);
+      res.status(200).json(updatedRoom);
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: "Invalid room ID or update failed" });
