@@ -26,7 +26,7 @@ router.get(
   "/:id",
   validateId,
   async (req: Request<{ id: string }>, res: Response) => {
-    console.log("GET /rooms/:id");
+    console.log(`GET /rooms/${req.params.id}`);
     try {
       const roomsCol = await rooms();
       const room = await roomsCol.findOne({ _id: new ObjectId(req.params.id) });
@@ -80,7 +80,7 @@ router.put(
   validateId,
   validateRoomFields(false),
   async (req: Request<{ id: string }>, res: Response) => {
-    console.log("PUT /rooms/:id");
+    console.log(`PUT /rooms/${req.params.id}`);
     try {
       const roomsCol = await rooms();
       const roomId = new ObjectId(req.params.id);
@@ -129,7 +129,7 @@ router.delete(
   "/:id",
   validateId,
   async (req: Request<{ id: string }>, res: Response) => {
-    console.log("DELETE /rooms/:id");
+    console.log(`DELETE /rooms/${req.params.id}`);
     try {
       const roomsCol = await rooms();
       const roomId = new ObjectId(req.params.id);
