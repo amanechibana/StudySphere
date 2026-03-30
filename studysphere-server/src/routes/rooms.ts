@@ -11,11 +11,12 @@ import {
   joinPrivateRoom,
 } from "../data/rooms.js";
 import type { NewRoom } from "../types/room.interface.js";
-import validateId from "../middleware/validateId.js";
+import { validateBody, validateParams } from "../middleware/validateFields.js";
 import {
-  validateRoomFields,
-  validatePartialRoomFields,
-} from "../middleware/validateFields.js";
+  createRoomBodySchema,
+  roomParamsSchema,
+  updateRoomBodySchema,
+} from "../schema/room.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
@@ -35,7 +36,7 @@ router.get("/", async (_req: Request, res: Response) => {
 // GET /:id
 router.get(
   "/:id",
-  validateId,
+  validateParams(roomParamsSchema),
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /rooms/${req.params.id}`);
     try {
@@ -56,7 +57,7 @@ router.get(
 // POST /
 router.post(
   "/",
-  validateRoomFields,
+  validateBody(createRoomBodySchema),
   async (req: Request, res: Response) => {
     console.log("POST /rooms");
     try {
@@ -88,8 +89,8 @@ router.post(
 // PATCH /:id — partial update
 router.patch(
   "/:id",
-  validateId,
-  validatePartialRoomFields,
+  validateParams(roomParamsSchema),
+  validateBody(updateRoomBodySchema),
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`PATCH /rooms/${req.params.id}`);
     try {
@@ -112,7 +113,7 @@ router.patch(
 // DELETE /:id
 router.delete(
   "/:id",
-  validateId,
+  validateParams(roomParamsSchema),
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`DELETE /rooms/${req.params.id}`);
     try {
@@ -133,7 +134,7 @@ router.delete(
 // POST /join/:id — public room join (`req.user` from auth; placeholder until then)
 router.post(
   "/join/:id",
-  validateId,
+  validateParams(roomParamsSchema),
   requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`POST /rooms/join/${req.params.id}`);
@@ -173,7 +174,7 @@ router.post(
 // POST /leave/:id — public room leave (`req.user` from auth; placeholder until then)
 router.post(
   "/leave/:id",
-  validateId,
+  validateParams(roomParamsSchema),
   requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`POST /rooms/leave/${req.params.id}`);
