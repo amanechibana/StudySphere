@@ -3,7 +3,6 @@ import { idParamsSchema } from "./id.js";
 
 export const roomParamsSchema = idParamsSchema;
 
-/** POST /rooms — client payload (server adds `inviteCode`, `createdAt`; `_id` from DB). */
 export const createRoomBodySchema = z
   .strictObject({
     name: z.string().trim().min(1, "name is required"),
@@ -24,8 +23,7 @@ export const createRoomBodySchema = z
     }
   });
 
-/** PATCH /rooms/:id — partial update; unknown keys rejected (strict). */
-export const updateRoomBodySchema = z
+  export const updateRoomBodySchema = z
   .strictObject({
     name: z.string().trim().min(1).optional(),
     description: z.string().trim().min(1).optional(),
@@ -54,7 +52,6 @@ export const updateRoomBodySchema = z
     }
   });
 
-/** Full room as JSON/API shape (after serialization). */
 export const roomDocumentSchema = z.strictObject({
   _id: z.string().min(1),
   name: z.string(),
