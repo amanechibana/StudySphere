@@ -119,6 +119,7 @@ export default function HomePage() {
             {filtered.length > 0 ? (
               filtered.map((room) => (
                 <RoomCard 
+                  key={room._id}
                   room={room}
                   handleJoinRoom={handleJoinRoom}
                 />
