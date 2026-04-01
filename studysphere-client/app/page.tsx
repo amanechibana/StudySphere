@@ -36,8 +36,22 @@ export default function HomePage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  function handleJoinRoom(room: Room, inviteCode?: string | null) {
-    
+  async function handleJoinRoom(room: Room, inviteCode?: string | null) {
+    const canJoin = room.capacity > room.members.length;
+    if (!canJoin) {
+      alert("Room is full");
+      return;
+    }
+    const response = await fetch(`/api/rooms/join/${room._id}`, {
+      method: "POST",
+      body: JSON.stringify({ inviteCode }),
+    });
+    if (!response.ok) {
+      alert("Failed to join room");
+      return;
+    }
+    const data = await response.json();
+    console.log(data);
   }
 
   return (
