@@ -1,15 +1,6 @@
 import { create } from "zustand";
 import { User } from "../types/user.interface";
 
-const dummyUser: User = {
-  _id: "dummy",
-  username: "Scholar42",
-  email: "dummy@email.com",
-  currentRoomId: null,
-  userSettingsId: "123",
-  createdAt: new Date(),
-};
-
 interface UserStore {
   user: User | null;
   setUser: (user: User) => void;
@@ -17,7 +8,7 @@ interface UserStore {
 }
 
 const useUserStore = create<UserStore>((set) => ({
-  user: dummyUser,
+  user: null,
   setUser: (user) => set({ user }),
   clearUser: () => set({ user: null }),
 }));

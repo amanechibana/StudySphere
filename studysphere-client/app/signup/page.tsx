@@ -1,15 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { firebaseCreateUserWithEmailAndPassword } from "../firebase/firebaseMethods";
 import { signupSchema } from "../validation/authSchema";
+import { useRouter } from "next/navigation";
+import useAuthStore from "../stores/authStore";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { user: firebaseUser, initialized } = useAuthStore();
+
+  useEffect(() => {
+    if (initialized && firebaseUser) {
+      router.push("/");
+    }
+  }, [firebaseUser, initialized, router]);
 
   async function handleSignup(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,16 +33,9 @@ export default function SignupPage() {
 
     //sign up with firebase first, then try mongo and rollback if it fails
     try {
-      const firebaseUserCredential =
-        await firebaseCreateUserWithEmailAndPassword(email, password);
-      try {
-        // TODO: do mongodb call to create user document
-      } catch (err) {
-        await firebaseUserCredential.user.delete();
-        setError("Something went wrong, please try again");
-      }
+      await firebaseCreateUserWithEmailAndPassword(email, password);
 
-      console.log(firebaseUserCredential);
+      router.push("/onboarding");
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An error occurred";
