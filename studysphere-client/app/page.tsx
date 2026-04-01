@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import { ROOMS } from "./dummyData/dummyRooms";
 import useUserStore from "./stores/userStore";
 import RoomCard from "./components/RoomCard";
+import { Room } from "./types/room.interface";
 
 const COURSES = [
   "All",
@@ -19,8 +20,6 @@ const COURSES = [
 export default function HomePage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
-  const [showInviteInput, setShowInviteInput] = useState(false);
 
   const { user } = useUserStore();
 
@@ -37,9 +36,8 @@ export default function HomePage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  function handleJoinRoom(e: React.MouseEvent<HTMLButtonElement>) {
-    e.preventDefault();
-    // validate room code then send it
+  function handleJoinRoom(room: Room, inviteCode?: string | null) {
+    
   }
 
   return (
@@ -68,12 +66,6 @@ export default function HomePage() {
               placeholder="Search rooms by name or topic..."
               className="flex-1 bg-surface-card border border-border rounded-lg px-4 py-2.5 text-sm text-espresso placeholder:text-border outline-none focus:border-caramel transition-colors"
             />
-            <button
-              onClick={() => setShowInviteInput((v) => !v)}
-              className="shrink-0 border border-border text-espresso text-sm font-semibold px-4 py-2.5 rounded-lg hover:border-caramel hover:text-caramel transition-colors cursor-pointer"
-            >
-              Join with code
-            </button>
             <Link
               href="#"
               className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors"
@@ -81,33 +73,6 @@ export default function HomePage() {
               + Create room
             </Link>
           </div>
-
-          {/* Invite code input — revealed on toggle */}
-          {showInviteInput && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                // TODO: validate invite code and join room on a handler
-              }}
-              className="flex gap-3 items-center"
-            >
-              <input
-                type="text"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="Enter invite code..."
-                className="flex-1 bg-surface-card border border-caramel rounded-lg px-4 py-2.5 text-sm text-espresso placeholder:text-border outline-none focus:border-espresso transition-colors"
-                autoFocus
-              />
-              <button
-                type="submit"
-                onClick={handleJoinRoom}
-                className="shrink-0 bg-caramel text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
-              >
-                Join →
-              </button>
-            </form>
-          )}
 
           {/* filter chips */}
           <div>
