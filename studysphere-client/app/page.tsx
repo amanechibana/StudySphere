@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import { ROOMS } from "./dummyData/dummyRooms";
 import useUserStore from "./stores/userStore";
 import RoomCard from "./components/RoomCard";
+import { Room } from "./types/room.interface";
 
 const COURSES = [
   "All",
@@ -19,8 +20,6 @@ const COURSES = [
 export default function HomePage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
-  const [showInviteInput, setShowInviteInput] = useState(false);
 
   const { user } = useUserStore();
 
