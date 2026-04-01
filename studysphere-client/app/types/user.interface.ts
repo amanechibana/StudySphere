@@ -3,6 +3,6 @@ export interface User {
     username: string;
     email: string;
     currentRoomId: string | null;
-    userSettingsId: string;
+    userSettingsId?: string;
     createdAt: Date;
 }

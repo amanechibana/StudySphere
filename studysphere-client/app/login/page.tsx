@@ -12,14 +12,17 @@ import SocialSignIn from "../components/SocialSignIn";
 
 export default function LoginPage() {
   const { user, initialized } = useAuthStore();
+  const {user: appUser} = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (initialized && user) {
+    if (initialized && user && appUser) {
       router.push("/");
+    } else if (initialized && user && !appUser) {
+      router.push("/onboarding");
     }
-  }, [user, initialized, router]);
+  }, [appUser, initialized, router, user]);
 
   async function handleLogin(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,8 +32,6 @@ export default function LoginPage() {
     const email = (form.elements.namedItem("email") as HTMLInputElement).value;
     const password = (form.elements.namedItem("password") as HTMLInputElement)
       .value;
-
-    // input validation -> probably using zod
 
     // authenticate using Firebase
     try {
