@@ -36,8 +36,8 @@ export default function HomePage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  async function handleJoinRoom(roomId: string, inviteCode?: string | null) {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/join/${roomId}`, {
+  async function handleJoinRoom(room: Room, inviteCode?: string | null) {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/join/${room._id}`, {
       method: "POST",
       body: JSON.stringify({ inviteCode }),
     });
@@ -116,7 +116,7 @@ export default function HomePage() {
                 <RoomCard 
                   key={room._id}
                   room={room}
-                  handleJoinRoom={() => handleJoinRoom(room._id)}
+                  handleJoinRoom={() => handleJoinRoom(room)}
                 />
               ))
             ) : (
