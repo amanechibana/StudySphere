@@ -1,6 +1,8 @@
 import Image from "next/image";
 
-export default function SocialSignIn({ googleSignIn }: {
+export default function SocialSignIn({
+  googleSignIn,
+}: {
   googleSignIn: () => void;
 }) {
   function handleGoogleSignIn() {
@@ -8,7 +10,10 @@ export default function SocialSignIn({ googleSignIn }: {
   }
 
   return (
-    <div className="flex rounded-full border-2 p-2 items-center justify-center gap-4 cursor-pointer hover:bg-zinc-300" onClick={() => handleGoogleSignIn()}>
+    <div
+      className="flex rounded-full border-2 p-2 items-center justify-center gap-4 cursor-pointer hover:bg-zinc-300"
+      onClick={() => handleGoogleSignIn()}
+    >
       <Image
         width={32}
         height={32}
