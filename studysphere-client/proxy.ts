@@ -16,6 +16,10 @@ export async function proxy(req: NextRequest) {
     );
 
     if (res.status === 404) {
+      const path = req.nextUrl.pathname;
+      if (path === "/onboarding" || path.startsWith("/onboarding/")) {
+        return NextResponse.next();
+      }
       return NextResponse.redirect(new URL("/onboarding", req.url));
     }
     
@@ -27,7 +31,6 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
 }
 
-
 export const config = {
-      matcher: ["/((?!login|signup|_next|favicon.ico).*)"],
-}
+  matcher: ["/((?!login|signup|onboarding|_next|favicon.ico).*)"],
+};
