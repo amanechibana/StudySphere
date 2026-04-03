@@ -8,8 +8,8 @@ import { onIdTokenChanged } from "firebase/auth";
 import { auth } from "../firebase/firebaseSetup";
 
 export default function AuthInit() {
-  const { user: firebaseUser, init, setUser, initialized } = useAuthStore();
-  const { user: appUser, clearUser } = useUserStore();
+  const { init, initialized } = useAuthStore();
+  const { clearUser, setUser: setAppUser } = useUserStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -28,8 +28,8 @@ export default function AuthInit() {
           );
 
           if (res.ok) {
-            const appUser = await res.json();
-            setUser(appUser);
+            const appUserData = await res.json();
+            setAppUser(appUserData);
             router.push("/");
           } else if (res.status === 404) {
             router.push("/onboarding");
