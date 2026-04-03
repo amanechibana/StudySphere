@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import useAuthStore from "../stores/authStore";
+import useUserStore from "../stores/userStore";
 import {
   firebaseGoogleSignIn,
   firebaseSignInWithEmailAndPassword,
@@ -12,7 +13,7 @@ import SocialSignIn from "../components/SocialSignIn";
 
 export default function LoginPage() {
   const { user, initialized } = useAuthStore();
-  const {user: appUser} = useAuthStore();
+  const { user: appUser } = useUserStore();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
