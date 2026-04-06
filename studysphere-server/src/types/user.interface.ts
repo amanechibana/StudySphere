@@ -1,5 +1,3 @@
-export type UserId = string;
-
 declare global {
     namespace Express {
         interface Request {
@@ -8,7 +6,14 @@ declare global {
     }
 }
 
+export type UserId = string;
+
 export interface User {
-    // TODO
-    _id: UserId
+  _id: UserId;
+  username: string;
+  email: string | null;
+  createdAt: Date;
 }
+
+// user fields for insert — MongoDB DOES NOT assign `_id`, Firebase does
+export type NewUser = User;
