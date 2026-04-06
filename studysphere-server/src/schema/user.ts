@@ -1,13 +1,8 @@
 import { z } from "zod";
 
-/** `GET|PATCH|DELETE /users/:id` */
+/** `GET|PATCH|DELETE /users/:id` — `id` is the Firebase UID (Mongo `_id`) */
 export const userIdParamsSchema = z.strictObject({
   id: z.string().trim().min(1, "id is required").max(128, "id is too long"),
-});
-
-/** `GET /users/firebase/:uid` */
-export const firebaseUidParamsSchema = z.strictObject({
-  uid: z.string().trim().min(1, "uid is required").max(128, "uid is too long"),
 });
 
 export const createUserBodySchema = z.strictObject({

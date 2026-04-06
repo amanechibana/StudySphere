@@ -11,7 +11,6 @@ import type { NewUser } from "../types/user.interface.js";
 import { validateBody, validateParams } from "../middleware/validateFields.js";
 import {
   userIdParamsSchema,
-  firebaseUidParamsSchema,
   createUserBodySchema,
   updateUserBodySchema,
 } from "../schema/user.js";
@@ -30,38 +29,17 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
-// GET /firebase/:uid — lookup by Firebase UID (same as stored `_id`)
-router.get(
-  "/firebase/:uid",
-  validateParams(firebaseUidParamsSchema),
-  async (req: Request<{ uid: string }>, res: Response) => {
-    console.log(`GET /users/firebase/${req.params.uid}`);
-    try {
-      const user = await getUserById(req.params.uid);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      res.status(200).json(user);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Failed to fetch user" });
-    }
-  },
-);
-
-// GET /:id
+// GET /:id — _id is the Firebase UID
 router.get(
   "/:id",
   validateParams(userIdParamsSchema),
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /users/${req.params.id}`);
     try {
-      const userId = req.params.id;
-      const user = await getUserById(userId);
+      const user = await getUserById(req.params.id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-
       res.status(200).json(user);
     } catch (err) {
       console.error(err);
