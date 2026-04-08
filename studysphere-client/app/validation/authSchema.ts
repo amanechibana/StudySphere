@@ -24,8 +24,18 @@ const signupSchema = z
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match", 
-    path: ["confirmPassword"]
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
   });
 
-export { loginSchema, signupSchema };
+const usernameSchema = z
+  .string()
+  .trim()
+  .min(3, "Username must be at least 3 characters")
+  .max(20, "Username must be at most 20 characters")
+  .regex(
+    /^[a-zA-Z0-9_]+$/,
+    "Username can only contain letters, numbers, and underscores",
+  );
+
+export { loginSchema, signupSchema, usernameSchema };

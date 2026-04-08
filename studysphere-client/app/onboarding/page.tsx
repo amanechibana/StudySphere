@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useAuthStore from "../stores/authStore";
 import useUserStore from "../stores/userStore";
+import { useCreateUser } from "../hooks/useUser";
+import { User } from "../api/user";
+import { usernameSchema } from "../validation/authSchema";
 
 export default function OnboardingPage() {
   const { user: firebaseUser, initialized } = useAuthStore();
@@ -11,8 +14,12 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   const [username, setUsername] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const {
+    mutate: createUser,
+    isPending,
+    error: mutationError,
+  } = useCreateUser();
 
   useEffect(() => {
     if (!initialized) return;
@@ -25,46 +32,38 @@ export default function OnboardingPage() {
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
+    setValidationError(null);
 
-    const trimmed = username.trim();
-    if (trimmed.length < 3 || trimmed.length > 20) {
-      setError("Username must be between 3 and 20 characters");
-      return;
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
-      setError("Username can only contain letters, numbers, and underscores");
+    const trimmed = usernameSchema.safeParse(username);
+    if (!trimmed.success) {
+      setValidationError(trimmed.error.issues[0].message);
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firebaseUid: firebaseUser!.uid,
-          username: trimmed,
-          email: firebaseUser!.email,
-        }),
-      });
-
-      if (res.ok) {
-        const newUser = await res.json();
-        setUser(newUser);
-        router.push("/");
-      } else if (res.status === 409) {
-        setError("Username already taken");
-      } else {
-        setError("Something went wrong, please try again");
-      }
-    } catch (err) {
-      console.error("Failed to create user:", err);
-      setError("Something went wrong, please try again");
-    } finally {
-      setLoading(false);
-    }
+    createUser(
+      {
+        firebaseUid: firebaseUser!.uid,
+        username: trimmed.data,
+        email: firebaseUser!.email || undefined,
+      },
+      {
+        onSuccess: (createdUser: User) => {
+          setUser(createdUser);
+          router.push("/");
+        },
+        onError: (err) => {
+          console.error("Failed to create user: ", err);
+          if (err.message.startsWith("409"))
+            setValidationError("Username already taken");
+          else setValidationError("Something went wrong, please try again");
+        },
+      },
+    );
   }
+
+  const error =
+    validationError ??
+    (mutationError ? "Something went wrong, please try again" : null);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -100,7 +99,7 @@ export default function OnboardingPage() {
                 required
                 value={username}
                 onChange={(e) => {
-                  setError(null);
+                  setValidationError(null);
                   setUsername(e.target.value);
                 }}
                 placeholder="scholar42"
@@ -113,10 +112,10 @@ export default function OnboardingPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isPending}
               className="mt-2 bg-espresso text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-espresso-muted transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Setting up..." : "Let's go"}
+              {isPending ? "Setting up..." : "Let's go"}
             </button>
 
             {error && <p className="text-red-500 text-sm">{error}</p>}

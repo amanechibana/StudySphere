@@ -14,7 +14,7 @@ export async function proxy(req: NextRequest) {
 
     if (!onboarded) {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/firebase/${decoded.uid}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${decoded.uid}`,
       );
 
       if (res.status === 404) {

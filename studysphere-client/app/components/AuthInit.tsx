@@ -19,7 +19,7 @@ export default function AuthInit() {
         console.log("[Auth Init] Fetching user data");
         try {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/firebase/${authenticatedUser.uid}`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${authenticatedUser.uid}`,
             {
               headers: {
                 Authorization: `Bearer ${await authenticatedUser.getIdToken()}`,
@@ -30,7 +30,6 @@ export default function AuthInit() {
           if (res.ok) {
             const appUserData = await res.json();
             setAppUser(appUserData);
-            router.push("/");
           } else if (res.status === 404) {
             router.push("/onboarding");
           }
