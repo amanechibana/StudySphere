@@ -9,8 +9,18 @@ export const initSockets = (io: Server) => {
     console.log("User connected:", socket.id);
 
     // join room
+    const socketToRoom = new Map<string, string>();
     socket.on("join_room", (roomId: string) => {
+      // ensures that the user is not already in the room
+      const currentRoom = socketToRoom.get(socket.id);
+      if (currentRoom) {
+        socket.leave(currentRoom);
+        console.log(`User ${socket.id} left ${currentRoom}`);
+      }
+
       socket.join(roomId);
+      socketToRoom.set(socket.id, roomId);
+
       console.log(`User ${socket.id} joined ${roomId}`);
     });
 
