@@ -52,12 +52,9 @@ export default function RoomPage({
       return;
     }
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/rooms/leave/${roomId}`,
-        {
-          method: "POST",
-        },
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/leave/${roomId}`, {
+        method: "POST",
+      });
       if (!response.ok) {
         alert("Failed to leave room");
         return;
