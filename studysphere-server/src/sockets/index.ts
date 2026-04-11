@@ -85,8 +85,8 @@ export const initSockets = (io: Server) => {
 
       // adds user to room in database
       const result = room.isPrivate
-        ? joinPrivateRoom(roomId, userId, inviteCode || "")
-        : joinPublicRoom(roomId, userId);
+        ? await joinPrivateRoom(roomId, userId, inviteCode || "")
+        : await joinPublicRoom(roomId, userId);
       if (!result) {
         console.log("Failed to join room");
         return;
@@ -142,6 +142,12 @@ export const initSockets = (io: Server) => {
           return;
         }
 
+        // ensure user is in room in the database
+        if (!room.members.some((m) => m === userId)) {
+          console.log("User is not in room");
+          return;
+        }
+
         // send message
         io.to(roomId).emit("receive_message", {
           message,
@@ -181,11 +187,11 @@ export const initSockets = (io: Server) => {
         socket.to(roomId).emit("user_left", {
           message,
           user: {
-            _id: userId,
+            _id: user._id,
             username: user.username,
           },
           timestamp: new Date(),
-        });
+        } as ReceiveMessageData);
       }
       console.log("User disconnected:", socket.id);
     });
