@@ -14,6 +14,3 @@ export interface User {
   email: string | null;
   createdAt: Date;
 }
-
-// user fields for insert — MongoDB DOES NOT assign `_id`, Firebase does
-export type NewUser = User;
