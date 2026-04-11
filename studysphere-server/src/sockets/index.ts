@@ -11,6 +11,7 @@ import {
 } from "../data/rooms.js";
 import { getUserById } from "../data/users.js";
 import { z } from "zod";
+import { socketAuthMiddleware } from "./middleware/auth.js";
 
 const socketToRoom = new Map<string, string>();
 
@@ -25,9 +26,13 @@ const sendMessageSchema = z.object({
 });
 
 export const initSockets = (io: Server) => {
+  // auth middleware
+  io.use(socketAuthMiddleware);
+
+  // connection
   io.on("connection", (socket: Socket) => {
-    // middle ware goes here
     console.log("User connected:", socket.id);
+    console.log("User ID:", socket.data.userId);
 
     // join room
     socket.on("join_room", async (payload: z.infer<typeof joinRoomSchema>) => {
@@ -115,7 +120,10 @@ export const initSockets = (io: Server) => {
         }
         const { roomId, message } = parsed.data;
         const userId = socket.data.userId;
-        if (!userId) return;
+        if (!userId) {
+          console.log("Could not fetch user ID");
+          return;
+        }
 
         // ensure user exists
         const user = await getUserById(userId);
@@ -124,6 +132,7 @@ export const initSockets = (io: Server) => {
           console.log("Invalid user");
           return;
         }
+        // ensure room exists and is active
         if (!room) {
           console.log("Invalid room");
           return;
@@ -150,7 +159,7 @@ export const initSockets = (io: Server) => {
       const userId = socket.data.userId;
       if (!userId) return;
 
-      // ensure user is exists
+      // ensure user exists
       const user = await getUserById(userId);
       if (!user) {
         console.log("Invalid user");
