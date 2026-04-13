@@ -1,7 +1,9 @@
 import cors from "cors";
 import express from "express";
+import http from "http";
 import { port } from "./config/settings.js";
 import configRoutes from "./routes/index.js";
+import { initializeSocketLayer } from "./socket.js";
 
 const app = express();
 
@@ -16,7 +18,14 @@ app.use(express.urlencoded({ extended: true }));
 
 configRoutes(app);
 
-app.listen(port, () => {
-  console.log("We've now got a server!");
-  console.log(`Your routes will be running on http://localhost:${port}`);
-});
+const server = http.createServer(app);
+
+async function startApp() {
+  await initializeSocketLayer(server);
+  server.listen(port, () => {
+    console.log("We've now got a server!");
+    console.log(`Your routes will be running on http://localhost:${port}`);
+  });
+}
+
+void startApp();

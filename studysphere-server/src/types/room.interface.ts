@@ -8,6 +8,7 @@ export interface Room {
   ownerId: string;
   inviteCode: string | null;
   isPrivate: boolean;
+  isActive: boolean;
   capacity: number;
 
   // canvasId: canvas

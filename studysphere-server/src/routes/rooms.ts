@@ -71,6 +71,7 @@ router.post(
         ownerId,
         inviteCode: Math.random().toString(36).substring(2, 5).toUpperCase(),
         isPrivate: isPrivate,
+        isActive: true,
         capacity: capacity || 0,
         members: [],
         createdAt: new Date(),
@@ -152,7 +153,11 @@ router.post(
 
       // check to see if the room is public or private
       if (room.isPrivate) {
-        const joinedRoom = await joinPrivateRoom(roomId, userId, req.body.inviteCode);
+        const joinedRoom = await joinPrivateRoom(
+          roomId,
+          userId,
+          req.body.inviteCode,
+        );
         if (!joinedRoom) {
           return res.status(404).json({ error: "Failed to join room" });
         }
