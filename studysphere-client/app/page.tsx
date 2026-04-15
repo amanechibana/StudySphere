@@ -39,8 +39,12 @@ export default function HomePage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  function handleJoinRoom(roomId: string) {
-    router.push(`/room/${roomId}`);
+  function handleJoinRoom(room: { _id: string; isPrivate: boolean }, inviteCode?: string) {
+    if (room.isPrivate && inviteCode) {
+      router.push(`/room/${room._id}?inviteCode=${encodeURIComponent(inviteCode)}`);
+    } else if (!room.isPrivate) {
+      router.push(`/room/${room._id}`);
+    }
   }
 
   return (
@@ -111,7 +115,7 @@ export default function HomePage() {
                 <RoomCard 
                   key={room._id}
                   room={room}
-                  handleJoinRoom={() => handleJoinRoom(room._id)}
+                  handleJoinRoom={handleJoinRoom}
                 />
               ))
             ) : (

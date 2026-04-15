@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import Navbar from "../../components/Navbar";
 import useUserStore from "../../stores/userStore";
@@ -26,13 +27,15 @@ export default function RoomPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const searchParams = useSearchParams();
+  const inviteCode = searchParams.get("inviteCode");
   const { user } = useUserStore();
   const router = useRouter();
   const { data: room, isLoading } = useRoom(id);
 
   const [elapsed, setElapsed] = useState(0);
 
-  useSocketRoom(id);
+  useSocketRoom(id, inviteCode);
   const { messages, sendMessage } = useChat(id);
 
   useEffect(() => {
