@@ -83,10 +83,11 @@ export const initSockets = (io: Server) => {
         } as ReceiveMessageData);
       }
 
-      // validate private room invite code
-      if (room.isPrivate) {
+      // validate private room invite code (unless user is room owner)
+      if (room.isPrivate && room.ownerId !== userId) {
+        console.log(`Private room validation - provided: "${inviteCode}", stored: "${room.inviteCode}"`);
         if (!inviteCode || inviteCode !== room.inviteCode) {
-          console.log("Invalid invite code for private room");
+          console.log(`Invalid invite code for private room ${roomId}`);
           socket.emit("join_room_error", {
             error: "Invalid invite code",
           });

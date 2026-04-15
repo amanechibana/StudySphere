@@ -153,6 +153,12 @@ router.post(
 
       // check to see if the room is public or private
       if (room.isPrivate) {
+        // skip invite code validation if user is room owner
+        if (room.ownerId !== userId) {
+          if (!req.body.inviteCode || req.body.inviteCode !== room.inviteCode) {
+            return res.status(403).json({ error: "Invalid invite code" });
+          }
+        }
         const joinedRoom = await joinPrivateRoom(
           roomId,
           userId,
