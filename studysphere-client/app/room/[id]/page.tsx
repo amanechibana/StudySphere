@@ -1,11 +1,15 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+
 import Navbar from "../../components/Navbar";
-import { ROOMS } from "../../dummyData/dummyRooms";
-import { Room } from "../../types/room.interface";
 import useUserStore from "../../stores/userStore";
 import { useRouter } from "next/navigation";
+import { useChat } from "../../hooks/useChat";
+import { useSocketRoom } from "../../hooks/useSocketRoom";
+import { useRoom } from "../../hooks/useRoom";
+import RoomChat from "./RoomChat";
+import useSocketStore from "../../stores/socketStore";
 
 const MEMBER_COLORS = [
   "bg-amber-800/20 border-amber-800/30 text-amber-900",
@@ -24,14 +28,12 @@ export default function RoomPage({
   const { id } = use(params);
   const { user } = useUserStore();
   const router = useRouter();
-  const [room, setRoom] = useState<Room | null>(null);
-  const [message, setMessage] = useState("");
+  const { data: room, isLoading } = useRoom(id);
+
   const [elapsed, setElapsed] = useState(0);
 
-  useEffect(() => {
-    const found = ROOMS.find((r) => r._id === id);
-    setRoom(found ?? null);
-  }, [id]);
+  useSocketRoom(id);
+  const { messages, sendMessage } = useChat(id);
 
   useEffect(() => {
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -45,27 +47,19 @@ export default function RoomPage({
     return [h, m, s].map((v) => v.toString().padStart(2, "0"));
   }
 
-  async function handleLeaveRoom() {
-    const roomId = room?._id;
-    if (!roomId) {
-      alert("Room not found");
-      return;
-    }
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/leave/${roomId}`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        alert("Failed to leave room");
-        return;
-      }
-      const data = await response.json();
-      console.log("Left room: ", data);
-      router.push("/");
-    } catch (error) {
-      console.error("Failed to leave room: ", error);
-      alert("Failed to leave room");
-    }
+  const { disconnect } = useSocketStore();
+
+  function handleLeaveRoom() {
+    disconnect();
+    router.push("/");
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="font-serif italic text-espresso-muted text-lg">Loading...</p>
+      </div>
+    );
   }
 
   if (!room) {
@@ -95,23 +89,10 @@ export default function RoomPage({
           0%, 100% { opacity: 0.4; }
           50% { opacity: 1; }
         }
-        .fade-up {
-          animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        .fade-in {
-          animation: fadeIn 0.5s ease both;
-        }
-        .breathe {
-          animation: breathe 3s ease-in-out infinite;
-        }
-        .timer-digit {
-          display: inline-block;
-          min-width: 1.3ch;
-          text-align: center;
-        }
-        .chat-input:focus ~ .chat-underline {
-          transform: scaleX(1);
-        }
+        .fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .fade-in { animation: fadeIn 0.5s ease both; }
+        .breathe { animation: breathe 3s ease-in-out infinite; }
+        .timer-digit { display: inline-block; min-width: 1.3ch; text-align: center; }
       `}</style>
 
       <Navbar backHref="/" roomName={room.name} roomSubtitle={room.course} />
@@ -131,13 +112,11 @@ export default function RoomPage({
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  room.isPrivate
-                    ? "bg-caramel/10 text-caramel border border-caramel/30"
-                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                }`}
-              >
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                room.isPrivate
+                  ? "bg-caramel/10 text-caramel border border-caramel/30"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}>
                 {room.isPrivate ? "Private" : "Public"}
               </span>
               <span className="text-xs text-espresso-muted border border-border rounded-full px-3 py-1">
@@ -155,99 +134,39 @@ export default function RoomPage({
               className="fade-up relative overflow-hidden bg-espresso rounded-2xl p-8 md:p-10"
               style={{ animationDelay: "80ms" }}
             >
-              {/* subtle noise overlay */}
               <div
                 className="absolute inset-0 opacity-[0.03]"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
                 }}
               />
-
               <div className="relative flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-semibold tracking-[0.25em] text-caramel/70 uppercase mb-4">
                     Session timer
                   </p>
                   <div className="flex items-baseline gap-1">
-                    <span className="timer-digit font-serif text-5xl md:text-6xl text-surface-card font-light tracking-wide">
-                      {h}
-                    </span>
-                    <span className="breathe text-caramel text-3xl md:text-4xl font-light mx-1">
-                      :
-                    </span>
-                    <span className="timer-digit font-serif text-5xl md:text-6xl text-surface-card font-light tracking-wide">
-                      {m}
-                    </span>
-                    <span className="breathe text-caramel text-3xl md:text-4xl font-light mx-1">
-                      :
-                    </span>
-                    <span className="timer-digit font-serif text-5xl md:text-6xl text-surface-card font-light tracking-wide">
-                      {s}
-                    </span>
+                    <span className="timer-digit font-serif text-5xl md:text-6xl text-surface-card font-light tracking-wide">{h}</span>
+                    <span className="breathe text-caramel text-3xl md:text-4xl font-light mx-1">:</span>
+                    <span className="timer-digit font-serif text-5xl md:text-6xl text-surface-card font-light tracking-wide">{m}</span>
+                    <span className="breathe text-caramel text-3xl md:text-4xl font-light mx-1">:</span>
+                    <span className="timer-digit font-serif text-5xl md:text-6xl text-surface-card font-light tracking-wide">{s}</span>
                   </div>
                 </div>
-
                 <div className="flex flex-col items-end gap-3">
                   <div className="flex items-center gap-2 bg-surface-card/10 rounded-full px-3 py-1.5">
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                     </span>
-                    <span className="text-xs text-surface-card/70 font-medium">
-                      In session
-                    </span>
+                    <span className="text-xs text-surface-card/70 font-medium">In session</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Chat */}
-            <div
-              className="fade-up bg-surface-card border border-border rounded-2xl flex flex-col flex-1 overflow-hidden"
-              style={{ animationDelay: "160ms" }}
-            >
-              <div className="px-6 pt-6 pb-4 border-b border-border/60">
-                <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase">
-                  Room chat
-                </p>
-              </div>
-
-              <div className="flex-1 min-h-[280px] flex items-center justify-center px-6">
-                <div className="text-center">
-                  <p className="font-serif italic text-espresso-muted/60 text-lg mb-1">
-                    Quiet so far...
-                  </p>
-                  <p className="text-xs text-espresso-muted/40">
-                    Be the first to break the silence.
-                  </p>
-                </div>
-              </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setMessage("");
-                }}
-                className="p-4 border-t border-border/60"
-              >
-                <div className="relative flex gap-3">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Type a message..."
-                      className="chat-input w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-espresso placeholder:text-border/80 outline-none focus:border-caramel/60 transition-all duration-300"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="shrink-0 bg-espresso text-surface-card text-sm font-medium px-5 py-3 rounded-xl hover:bg-espresso-muted transition-colors duration-200 cursor-pointer active:scale-[0.97]"
-                  >
-                    Send
-                  </button>
-                </div>
-              </form>
+            <div className="fade-up" style={{ animationDelay: "160ms" }}>
+              <RoomChat messages={messages} sendMessage={sendMessage} />
             </div>
           </div>
 
@@ -259,24 +178,15 @@ export default function RoomPage({
               style={{ animationDelay: "240ms" }}
             >
               <div className="flex items-center justify-between mb-5">
-                <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase">
-                  Members
-                </p>
-                <p className="text-xs text-caramel font-medium">
-                  {room.members.length}/{room.capacity}
-                </p>
+                <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase">Members</p>
+                <p className="text-xs text-caramel font-medium">{room.members.length}/{room.capacity}</p>
               </div>
-
-              {/* Capacity bar */}
               <div className="h-1 bg-border/40 rounded-full mb-5 overflow-hidden">
                 <div
                   className="h-full bg-caramel/60 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${(room.members.length / room.capacity) * 100}%`,
-                  }}
+                  style={{ width: `${(room.members.length / room.capacity) * 100}%` }}
                 />
               </div>
-
               <ul className="space-y-2">
                 {room.members.map((memberId, i) => {
                   const isYou = memberId === user?._id;
@@ -286,18 +196,12 @@ export default function RoomPage({
                       className="fade-up flex items-center gap-3 p-2 rounded-xl hover:bg-background/60 transition-colors duration-200"
                       style={{ animationDelay: `${300 + i * 60}ms` }}
                     >
-                      <div
-                        className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs font-semibold ${MEMBER_COLORS[i % MEMBER_COLORS.length]}`}
-                      >
+                      <div className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs font-semibold ${MEMBER_COLORS[i % MEMBER_COLORS.length]}`}>
                         {String.fromCharCode(65 + i)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-espresso truncate">
-                          {isYou ? "You" : `Scholar ${i + 1}`}
-                        </p>
-                        <p className="text-[11px] text-espresso-muted/60">
-                          {isYou ? "That's you!" : "Studying"}
-                        </p>
+                        <p className="text-sm font-medium text-espresso truncate">{isYou ? "You" : `Scholar ${i + 1}`}</p>
+                        <p className="text-[11px] text-espresso-muted/60">{isYou ? "That's you!" : "Studying"}</p>
                       </div>
                       <span className="relative flex h-2 w-2 shrink-0">
                         <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40 animate-ping" />
@@ -306,24 +210,16 @@ export default function RoomPage({
                     </li>
                   );
                 })}
-
-                {/* Empty seats */}
-                {Array.from({
-                  length: room.capacity - room.members.length,
-                }).map((_, i) => (
+                {Array.from({ length: room.capacity - room.members.length }).map((_, i) => (
                   <li
                     key={`empty-${i}`}
                     className="fade-up flex items-center gap-3 p-2 rounded-xl opacity-30"
-                    style={{
-                      animationDelay: `${300 + (room.members.length + i) * 60}ms`,
-                    }}
+                    style={{ animationDelay: `${300 + (room.members.length + i) * 60}ms` }}
                   >
                     <div className="w-9 h-9 rounded-full border border-dashed border-border flex items-center justify-center">
                       <span className="text-xs text-border">?</span>
                     </div>
-                    <p className="text-sm text-espresso-muted italic">
-                      Open seat
-                    </p>
+                    <p className="text-sm text-espresso-muted italic">Open seat</p>
                   </li>
                 ))}
               </ul>
@@ -334,26 +230,18 @@ export default function RoomPage({
               className="fade-up bg-surface-card border border-border rounded-2xl p-6"
               style={{ animationDelay: "320ms" }}
             >
-              <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase mb-4">
-                Details
-              </p>
+              <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase mb-4">Details</p>
               <dl className="space-y-3.5 text-sm">
                 <div className="flex justify-between items-center">
                   <dt className="text-espresso-muted">Created</dt>
                   <dd className="text-espresso font-medium">
-                    {new Date(room.createdAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                    {new Date(room.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </dd>
                 </div>
                 <div className="h-px bg-border/40" />
                 <div className="flex justify-between items-center">
                   <dt className="text-espresso-muted">Visibility</dt>
-                  <dd className="text-espresso font-medium">
-                    {room.isPrivate ? "Invite only" : "Open to all"}
-                  </dd>
+                  <dd className="text-espresso font-medium">{room.isPrivate ? "Invite only" : "Open to all"}</dd>
                 </div>
                 {room.isPrivate && (
                   <>

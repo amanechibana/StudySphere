@@ -2,12 +2,22 @@ import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
 
-// Socket only connects when user needs to join a room and disconnects when they leave
-export function getSocket() {
+export function initSocket() {
   if (!socket) {
     socket = io(process.env.NEXT_PUBLIC_BACKEND_URL!, {
-        autoConnect: false,
+      autoConnect: false,
     });
   }
   return socket;
+}
+
+export function getSocket() {
+  return socket;
+}
+
+export function disconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
 }
