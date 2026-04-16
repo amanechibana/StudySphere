@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { Room } from "../types/room.interface";
 import { useState } from "react";
+import useUserStore from "../stores/userStore";
 
 export default function RoomCard({ room, handleJoinRoom }: {
     room: Room,
     handleJoinRoom: (room: Room, inviteCode?: string) => void
 }) {
+    const { user } = useUserStore();
     const [expandedCodeRoom, setExpandedCodeRoom] = useState<string | null>(null);
     const [roomCode, setRoomCode] = useState("");
+    
+    const isRoomOwner = user?._id === room.ownerId;
 
     return (
         <div
@@ -44,16 +48,25 @@ export default function RoomCard({ room, handleJoinRoom }: {
                 capacity={room.capacity}
             />
                 {room.isPrivate ? (
-                    <button
-                        onClick={() =>
-                            setExpandedCodeRoom(
-                                expandedCodeRoom === room._id ? null : room._id,
-                            )
-                        }
-                        className="text-caramel border border-caramel/40 bg-caramel/10 text-sm font-semibold px-4 py-2 rounded-lg hover:bg-caramel/20 transition-colors cursor-pointer"
-                    >
-                        Enter code
-                    </button>
+                    isRoomOwner ? (
+                        <Link
+                            href={`/room/${room._id}?inviteCode=${room.inviteCode}`}
+                            className="bg-espresso text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-espresso-muted transition-colors"
+                        >
+                            Join →
+                        </Link>
+                    ) : (
+                        <button
+                            onClick={() =>
+                                setExpandedCodeRoom(
+                                    expandedCodeRoom === room._id ? null : room._id,
+                                )
+                            }
+                            className="text-caramel border border-caramel/40 bg-caramel/10 text-sm font-semibold px-4 py-2 rounded-lg hover:bg-caramel/20 transition-colors cursor-pointer"
+                        >
+                            Enter code
+                        </button>
+                    )
                 ) : (
                     <Link
                         href={`/room/${room._id}`}

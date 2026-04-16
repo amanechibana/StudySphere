@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import Navbar from "../../components/Navbar";
 import useUserStore from "../../stores/userStore";
@@ -26,13 +27,15 @@ export default function RoomPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const searchParams = useSearchParams();
+  const inviteCode = searchParams.get("inviteCode");
   const { user } = useUserStore();
   const router = useRouter();
   const { data: room, isLoading } = useRoom(id);
 
   const [elapsed, setElapsed] = useState(0);
 
-  useSocketRoom(id);
+  const { joinError } = useSocketRoom(id, inviteCode);
   const { messages, sendMessage } = useChat(id);
 
   useEffect(() => {
@@ -68,6 +71,24 @@ export default function RoomPage({
         <p className="font-serif italic text-espresso-muted text-lg">
           Room not found.
         </p>
+      </div>
+    );
+  }
+
+  if (joinError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="font-serif italic text-red-600 text-lg mb-4">
+            {joinError}
+          </p>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-espresso text-white px-4 py-2 rounded-lg hover:bg-espresso-muted transition-colors"
+          >
+            Back to home
+          </button>
+        </div>
       </div>
     );
   }
