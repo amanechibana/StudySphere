@@ -1,19 +1,24 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
+import type { ParamsDictionary } from "express-serve-static-core";
 import {
-    getUsers,
-    getUserById,
-    createUser,
-    updateUser,
-    deleteUser,
+  getUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
 } from "../data/users.js";
-import type { NewUser } from "../types/user.interface.js";
+import type { User } from "../types/user.interface.js";
 import { validateBody, validateParams } from "../middleware/validateFields.js";
 import {
   userIdParamsSchema,
   createUserBodySchema,
   updateUserBodySchema,
+  type CreateUserBody,
+  type UpdateUserBody,
+  type UserParams,
 } from "../schema/user.js";
+import type { ErrorResponse } from "../types/api.js";
 
 const router = Router();
 
@@ -33,7 +38,7 @@ router.get("/", async (_req: Request, res: Response) => {
 router.get(
   "/:id",
   validateParams(userIdParamsSchema),
-  async (req: Request<{ id: string }>, res: Response) => {
+  async (req: Request<UserParams>, res: Response<User | ErrorResponse>) => {
     console.log(`GET /users/${req.params.id}`);
     try {
       const user = await getUserById(req.params.id);
@@ -52,16 +57,12 @@ router.get(
 router.post(
   "/",
   validateBody(createUserBodySchema),
-  async (req: Request, res: Response) => {
+  async (req: Request<ParamsDictionary, User | ErrorResponse, CreateUserBody>, res: Response<User | ErrorResponse>) => {
     console.log("POST /users");
     try {
-      const { firebaseUid, username, email } = req.body as {
-        firebaseUid: string;
-        username: string;
-        email?: string | null;
-      };
+      const { firebaseUid, username, email } = req.body;
 
-      const newUser: NewUser = {
+      const newUser: User = {
         _id: firebaseUid,
         username,
         email: email ?? null,
@@ -90,12 +91,15 @@ router.patch(
   "/:id",
   validateParams(userIdParamsSchema),
   validateBody(updateUserBodySchema),
-  async (req: Request<{ id: string }>, res: Response) => {
+  async (
+    req: Request<UserParams, User | ErrorResponse, UpdateUserBody>,
+    res: Response<User | ErrorResponse>,
+  ) => {
     console.log(`PATCH /users/${req.params.id}`);
     try {
       const updatedUser = await updateUser(
         req.params.id,
-        req.body as Partial<NewUser>,
+        req.body as Partial<User>,
       );
       if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
@@ -113,7 +117,7 @@ router.patch(
 router.delete(
   "/:id",
   validateParams(userIdParamsSchema),
-  async (req: Request<{ id: string }>, res: Response) => {
+  async (req: Request<UserParams>, res: Response<ErrorResponse>) => {
     console.log(`DELETE /users/${req.params.id}`);
     try {
       const userId = req.params.id;
