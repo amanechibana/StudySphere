@@ -83,12 +83,27 @@ export const initSockets = (io: Server) => {
         } as ReceiveMessageData);
       }
 
+      // validate private room invite code (unless user is room owner)
+      if (room.isPrivate && room.ownerId !== userId) {
+        console.log(`Private room validation - provided: "${inviteCode}", stored: "${room.inviteCode}"`);
+        if (!inviteCode || inviteCode !== room.inviteCode) {
+          console.log(`Invalid invite code for private room ${roomId}`);
+          socket.emit("join_room_error", {
+            error: "Invalid invite code",
+          });
+          return;
+        }
+      }
+
       // adds user to room in database
       const result = room.isPrivate
         ? await joinPrivateRoom(roomId, userId, inviteCode || "")
         : await joinPublicRoom(roomId, userId);
       if (!result) {
         console.log("Failed to join room");
+        socket.emit("join_room_error", {
+          error: "Failed to join room",
+        });
         return;
       }
 

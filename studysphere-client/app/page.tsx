@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import Navbar from "./components/Navbar";
-import { ROOMS } from "./dummyData/dummyRooms";
 import useUserStore from "./stores/userStore";
 import RoomCard from "./components/RoomCard";
-import { Room } from "./types/room.interface";
+import CreateRoomModal from "./components/CreateRoomModal";
+import { useRooms } from "./hooks/useRoom";
+import { useRouter } from "next/navigation";
 
 const COURSES = [
   "All",
@@ -20,10 +20,13 @@ const COURSES = [
 export default function HomePage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { user } = useUserStore();
+  const { data: rooms = [] } = useRooms();
+  const router = useRouter();
 
-  const filtered = ROOMS.filter((r) => {
+  const filtered = rooms.filter((r) => {
     const matchesCourse = activeFilter === "All" || r.course === activeFilter;
     const matchesSearch =
       search.trim() === "" ||
@@ -36,21 +39,17 @@ export default function HomePage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  async function handleJoinRoom(room: Room, inviteCode?: string | null) {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/join/${room._id}`, {
-      method: "POST",
-      body: JSON.stringify({ inviteCode }),
-    });
-    if (!response.ok) {
-      alert("Failed to join room");
-      return;
+  function handleJoinRoom(room: { _id: string; isPrivate: boolean }, inviteCode?: string) {
+    if (room.isPrivate && inviteCode) {
+      router.push(`/room/${room._id}?inviteCode=${encodeURIComponent(inviteCode)}`);
+    } else if (!room.isPrivate) {
+      router.push(`/room/${room._id}`);
     }
-    const data = await response.json();
-    console.log(data);
   }
 
   return (
     <div className="min-h-screen bg-background">
+      {showCreateModal && <CreateRoomModal onClose={() => setShowCreateModal(false)} />}
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-6 py-10">
@@ -75,12 +74,12 @@ export default function HomePage() {
               placeholder="Search rooms by name or topic..."
               className="flex-1 bg-surface-card border border-border rounded-lg px-4 py-2.5 text-sm text-espresso placeholder:text-border outline-none focus:border-caramel transition-colors"
             />
-            <Link
-              href="#"
-              className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors"
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
             >
               + Create room
-            </Link>
+            </button>
           </div>
 
           {/* filter chips */}
@@ -116,7 +115,7 @@ export default function HomePage() {
                 <RoomCard 
                   key={room._id}
                   room={room}
-                  handleJoinRoom={() => handleJoinRoom(room)}
+                  handleJoinRoom={handleJoinRoom}
                 />
               ))
             ) : (
