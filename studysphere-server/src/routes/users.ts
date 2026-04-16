@@ -18,7 +18,7 @@ import {
   type UpdateUserBody,
   type UserParams,
 } from "../schema/user.js";
-import type { ErrorResponse } from "../types/api.js";
+import type { ErrorResponse } from "../types/api.interface.ts";
 
 const router = Router();
 
