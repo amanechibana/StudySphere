@@ -10,7 +10,7 @@ import { usernameSchema } from "../validation/authSchema";
 
 export default function OnboardingPage() {
   const { user: firebaseUser, initialized } = useAuthStore();
-  const { user: appUser, setUser } = useUserStore();
+  const { user: appUser, fetchError, setUser } = useUserStore();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -25,10 +25,10 @@ export default function OnboardingPage() {
     if (!initialized) return;
     if (!firebaseUser) {
       router.push("/login");
-    } else if (appUser) {
+    } else if (appUser || fetchError) {
       router.push("/");
     }
-  }, [firebaseUser, initialized, router, appUser]);
+  }, [firebaseUser, initialized, router, appUser, fetchError]);
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();

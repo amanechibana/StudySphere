@@ -9,7 +9,7 @@ import { auth } from "../firebase/firebaseSetup";
 
 export default function AuthInit() {
   const { init, initialized } = useAuthStore();
-  const { clearUser, setUser: setAppUser } = useUserStore();
+  const { clearUser, setUser: setAppUser, setFetchError } = useUserStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -35,6 +35,7 @@ export default function AuthInit() {
           }
         } catch (err) {
           console.error("Failed to find app user: ", err);
+          setFetchError(true);
         }
       },
       onLogout: () => {
