@@ -10,6 +10,8 @@ import { auth } from "../firebase/firebaseSetup";
 export default function AuthInit() {
   const { init } = useAuthStore();
   const { clearUser, setUser: setAppUser } = useUserStore();
+  const { init, initialized } = useAuthStore();
+  const { clearUser, setUser: setAppUser, setFetchError } = useUserStore();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -42,6 +44,7 @@ export default function AuthInit() {
           }
         } catch (err) {
           console.error("Failed to find app user: ", err);
+          setFetchError(true);
         }
       },
       onLogout: () => {

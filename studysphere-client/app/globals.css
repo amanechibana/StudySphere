@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.breathe { animation: breathe 3s ease-in-out infinite; }
+.timer-digit { display: inline-block; min-width: 1.3ch; text-align: center; }
+
 :root {
   --background: #e8e3d5;
   --surface: #f5f0e8;
