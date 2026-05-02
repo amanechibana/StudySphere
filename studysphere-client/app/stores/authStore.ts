@@ -1,4 +1,4 @@
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 import { create } from "zustand";
 import { auth } from "../firebase/firebaseSetup";
 import { firebaseSignOut } from "../firebase/firebaseMethods";

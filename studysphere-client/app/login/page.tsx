@@ -19,7 +19,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (initialized && user && appUser) {
-      router.push("/");
+      router.push("/rooms");
     } else if (initialized && user && !appUser) {
       router.push("/onboarding");
     }

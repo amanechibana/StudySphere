@@ -148,6 +148,17 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   if (joinError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="font-serif italic text-red-600 text-lg mb-4">
+            {joinError}
+          </p>
+          <button
+            onClick={() => router.push("/rooms")}
+            className="bg-espresso text-white px-4 py-2 rounded-lg hover:bg-espresso-muted transition-colors"
+          >
+            Back to home
+          </button>
+        </div>
         <p className="font-serif italic text-red-500 text-lg">{joinError}</p>
       </div>
     );
