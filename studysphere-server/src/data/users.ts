@@ -1,6 +1,6 @@
 import { ObjectId, type Document, type UpdateFilter, type WithId } from "mongodb";
 import { users } from "../config/mongoCollections.js";
-import type { UserId, NewUser } from "../types/user.interface.js";
+import type { UserId, User } from "../types/user.interface.js";
 
 async function getUsers() {
   const usersCollection = await users();
@@ -16,7 +16,7 @@ async function getUserById(id: UserId) {
   return user;
 }
 
-async function createUser(user: NewUser) {
+async function createUser(user: User) {
   const usersCollection = await users();
   await usersCollection.insertOne(user);
 
@@ -25,8 +25,8 @@ async function createUser(user: NewUser) {
 
 async function updateUser(
   id: UserId,
-  partial: Partial<NewUser>,
-): Promise<WithId<NewUser> | null> {
+  partial: Partial<User>,
+): Promise<WithId<User> | null> {
   const usersCollection = await users();
 
   const write = Object.fromEntries(

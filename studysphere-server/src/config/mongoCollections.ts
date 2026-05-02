@@ -1,7 +1,7 @@
 import type { Collection, Document } from "mongodb";
 import { dbConnection } from "./mongoConnection.js";
 import type { NewRoom } from "../types/room.interface.js";
-import type { NewUser } from "../types/user.interface.js";
+import type { User } from "../types/user.interface.js";
 
 const getCollectionFn =
   <T extends Document>(collection: string) => {
@@ -18,4 +18,4 @@ const getCollectionFn =
   };
 
 export const rooms = getCollectionFn<NewRoom>("rooms");
-export const users = getCollectionFn<NewUser>("users");
+export const users = getCollectionFn<User>("users");

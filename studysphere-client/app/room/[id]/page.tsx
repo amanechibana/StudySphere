@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import Navbar from "../../components/Navbar";
 import useUserStore from "../../stores/userStore";
@@ -24,6 +25,28 @@ const MEMBER_COLORS = [
   "bg-orange-800/20 border-orange-800/30 text-orange-900",
   "bg-teal-800/20 border-teal-800/30 text-teal-900",
 ];
+
+export default function RoomPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const searchParams = useSearchParams();
+  const inviteCode = searchParams.get("inviteCode");
+  const { user } = useUserStore();
+  const router = useRouter();
+  const { data: room, isLoading } = useRoom(id);
+
+  const [elapsed, setElapsed] = useState(0);
+
+  const { joinError } = useSocketRoom(id, inviteCode);
+  const { messages, sendMessage } = useChat(id);
+
+  useEffect(() => {
+    const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
 function formatTime(seconds: number) {
   return [
