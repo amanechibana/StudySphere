@@ -26,7 +26,7 @@ export default function OnboardingPage() {
     if (!firebaseUser) {
       router.push("/login");
     } else if (appUser) {
-      router.push("/");
+      router.push("/rooms");
     }
   }, [firebaseUser, initialized, router, appUser]);
 
@@ -49,7 +49,7 @@ export default function OnboardingPage() {
       {
         onSuccess: (createdUser: User) => {
           setUser(createdUser);
-          router.push("/");
+          router.push("/rooms");
         },
         onError: (err) => {
           console.error("Failed to create user: ", err);

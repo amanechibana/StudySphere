@@ -54,7 +54,7 @@ export default function RoomPage({
 
   function handleLeaveRoom() {
     disconnect();
-    router.push("/");
+    router.push("/rooms");
   }
 
   if (isLoading) {
@@ -83,7 +83,7 @@ export default function RoomPage({
             {joinError}
           </p>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/rooms")}
             className="bg-espresso text-white px-4 py-2 rounded-lg hover:bg-espresso-muted transition-colors"
           >
             Back to home
@@ -116,7 +116,7 @@ export default function RoomPage({
         .timer-digit { display: inline-block; min-width: 1.3ch; text-align: center; }
       `}</style>
 
-      <Navbar backHref="/" roomName={room.name} roomSubtitle={room.course} />
+      <Navbar backHref="/rooms" roomName={room.name} roomSubtitle={room.course} />
 
       <main className="max-w-6xl mx-auto px-6 py-10">
         {/* ── Room header ── */}
