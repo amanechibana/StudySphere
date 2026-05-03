@@ -24,6 +24,12 @@ const features = [
       "Keep questions, resources, and quick check-ins in one room while the session timer keeps everyone moving.",
     image: "/chatroom.jpg",
   },
+  {
+    title: "Sketch ideas together",
+    description:
+      "Use the shared drawing board to map problems, diagram concepts, and explain tricky ideas visually in real time.",
+    image: "/canvas.jpg",
+  },
 ];
 
 export default function HomePage() {
@@ -85,8 +91,8 @@ export default function HomePage() {
               <div className="absolute right-0 bottom-0 w-[66%] overflow-hidden rounded-lg border border-border bg-surface-card shadow-md">
                 <div className="relative aspect-[4/3]">
                   <Image
-                    src="/chatroom.jpg"
-                    alt="StudySphere room chat"
+                    src="/create_room.jpg"
+                    alt="StudySphere room creation"
                     fill
                     className="object-cover"
                     sizes="(min-width: 1024px) 30rem, 80vw"
@@ -114,7 +120,7 @@ export default function HomePage() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {features.map((feature) => (
                 <article
                   key={feature.title}
