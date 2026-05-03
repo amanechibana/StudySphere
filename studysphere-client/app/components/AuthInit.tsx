@@ -8,8 +8,6 @@ import { onIdTokenChanged } from "firebase/auth";
 import { auth } from "../firebase/firebaseSetup";
 
 export default function AuthInit() {
-  const { init } = useAuthStore();
-  const { clearUser, setUser: setAppUser } = useUserStore();
   const { init, initialized } = useAuthStore();
   const { clearUser, setUser: setAppUser, setFetchError } = useUserStore();
   const router = useRouter();
