@@ -73,6 +73,7 @@ router.post(
         isPrivate: isPrivate,
         isActive: true,
         capacity: capacity || 0,
+        strokes: [],
         members: [],
         createdAt: new Date(),
       };
