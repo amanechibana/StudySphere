@@ -12,3 +12,17 @@ export type Stroke = {
   points: Point[];
   timestamp: Date;
 };
+
+export type ReceiveStrokeData = {
+  stroke: Stroke;
+  user: {
+    _id: string;
+    username: string;
+  };
+  timestamp: Date;
+};
+
+export type SendStrokeData = {
+  roomId: string;
+  stroke: Stroke;
+};
