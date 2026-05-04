@@ -1,3 +1,5 @@
+import type { Stroke } from "./stroke.interface.js";
+
 export type RoomId = string;
 
 export interface Room {
@@ -10,6 +12,7 @@ export interface Room {
   isPrivate: boolean;
   isActive: boolean;
   capacity: number;
+  strokes: Stroke[];
 
   // canvasId: canvas
 

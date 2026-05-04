@@ -1,7 +1,13 @@
-import { ObjectId, type Document, type UpdateFilter, type WithId } from "mongodb";
+import {
+  ObjectId,
+  type Document,
+  type UpdateFilter,
+  type WithId,
+} from "mongodb";
 import { rooms } from "../config/mongoCollections.js";
 import type { RoomId, NewRoom } from "../types/room.interface.js";
 import type { UserId } from "../types/user.interface.js";
+import type { Stroke } from "../types/stroke.interface.js";
 
 async function getRooms() {
   const roomsCollection = await rooms();
@@ -63,7 +69,7 @@ async function joinPublicRoom(
     { $addToSet: { members: userId } },
     { returnDocument: "after" },
   );
-  
+
   return result ?? null;
 }
 
@@ -79,7 +85,7 @@ async function joinPrivateRoom(
     { $addToSet: { members: userId } },
     { returnDocument: "after" },
   );
-  
+
   return result ?? null;
 }
 
@@ -94,7 +100,21 @@ async function leaveRoom(
     { $pull: { members: userId } } as unknown as UpdateFilter<Document>,
     { returnDocument: "after" },
   );
-  
+
+  return result ?? null;
+}
+
+async function addStrokeToRoom(
+  id: RoomId,
+  stroke: Stroke,
+): Promise<WithId<NewRoom> | null> {
+  const roomsCollection = await rooms();
+  const roomId = new ObjectId(id);
+  const result = await roomsCollection.findOneAndUpdate(
+    { _id: roomId },
+    { $push: { strokes: stroke } },
+    { returnDocument: "after" },
+  );
   return result ?? null;
 }
 
@@ -107,4 +127,5 @@ export {
   joinPublicRoom,
   joinPrivateRoom,
   leaveRoom,
+  addStrokeToRoom,
 };
