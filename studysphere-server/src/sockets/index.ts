@@ -37,7 +37,7 @@ const sendStrokeSchema = z.object({
     color: z.string(),
     width: z.number(),
     points: z.array(z.object({ x: z.number(), y: z.number() })),
-    timestamp: z.date(),
+    timestamp: z.string().datetime(),
   }),
 });
 
@@ -95,7 +95,7 @@ export const initSockets = (io: Server) => {
             _id: user._id,
             username: user.username,
           },
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         } as ReceiveMessageData);
       }
 
@@ -136,7 +136,7 @@ export const initSockets = (io: Server) => {
           _id: user._id,
           username: user.username,
         },
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       } as ReceiveMessageData);
 
       console.log(`User ${socket.id} joined ${roomId}`);
@@ -172,13 +172,17 @@ export const initSockets = (io: Server) => {
           return;
         }
         const result = await addStrokeToRoom(roomId, stroke);
+        if (!result) {
+          console.log("Failed to add stroke to room");
+          return;
+        }
         io.to(roomId).emit("receive_stroke", {
           stroke,
           user: {
             _id: user._id,
             username: user.username,
           },
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         } as ReceiveStrokeData);
       },
     );
@@ -229,7 +233,7 @@ export const initSockets = (io: Server) => {
             _id: user._id,
             username: user.username,
           },
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         } as ReceiveMessageData);
       },
     );
@@ -264,7 +268,7 @@ export const initSockets = (io: Server) => {
             _id: user._id,
             username: user.username,
           },
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         } as ReceiveMessageData);
       }
       console.log("User disconnected:", socket.id);

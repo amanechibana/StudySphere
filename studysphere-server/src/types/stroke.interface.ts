@@ -10,7 +10,7 @@ export type Stroke = {
   color: string;
   width: number;
   points: Point[];
-  timestamp: Date;
+  timestamp: string;
 };
 
 export type ReceiveStrokeData = {
@@ -19,7 +19,7 @@ export type ReceiveStrokeData = {
     _id: string;
     username: string;
   };
-  timestamp: Date;
+  timestamp: string;
 };
 
 export type SendStrokeData = {
