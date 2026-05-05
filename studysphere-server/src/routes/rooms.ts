@@ -32,6 +32,7 @@ import {
   type ListMessagesQuery,
 } from "../schema/message.js";
 import { requireAuth } from "../middleware/auth.js";
+import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
 
 const router = Router();
 
@@ -40,7 +41,8 @@ router.get("/", async (_req: Request, res: Response) => {
   console.log("GET /rooms");
   try {
     const allRooms = await getRooms();
-    res.status(200).json(allRooms);
+    const activeRooms = allRooms.filter((room) => !isRoomArchived(room as any));
+    res.status(200).json(activeRooms);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch rooms" });
@@ -57,6 +59,9 @@ router.get(
       const roomId = req.params.id;
       const room = await getRoomById(roomId);
       if (!room) {
+        return res.status(404).json({ error: "Room not found" });
+      }
+      if (isRoomArchived(room as any)) {
         return res.status(404).json({ error: "Room not found" });
       }
 
@@ -90,6 +95,7 @@ router.post(
         strokes: [],
         members: [],
         createdAt: new Date(),
+        isArchived: false,
       };
 
       const createdRoom = await createRoom(newRoom);
@@ -164,6 +170,10 @@ router.post(
       const room = await getRoomById(roomId);
       if (!room) {
         return res.status(404).json({ error: "Room not found" });
+      }
+
+      if (isRoomArchived(room as any)) {
+        return res.status(403).json({ error: "Room has been archived" });
       }
 
       // check to see if the room is public or private

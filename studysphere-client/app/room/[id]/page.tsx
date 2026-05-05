@@ -76,6 +76,14 @@ function MembersPanel({ room, userId }: { room: Room; userId?: string }) {
 }
 
 function DetailsPanel({ room }: { room: Room }) {
+  const [copied, setCopied] = useState(false);
+
+  function copyInviteCode() {
+    navigator.clipboard.writeText(room.inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <div className="bg-surface-card border border-border rounded-2xl p-4">
       <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase mb-3">Details</p>
@@ -96,8 +104,17 @@ function DetailsPanel({ room }: { room: Room }) {
             <div className="h-px bg-border/40" />
             <div className="flex justify-between items-center">
               <dt className="text-espresso-muted">Invite code</dt>
-              <dd className="text-espresso font-mono text-xs bg-background px-2 py-1 rounded-md border border-border">
-                {room.inviteCode}
+              <dd className="flex items-center gap-2">
+                <span className="text-espresso font-mono text-xs bg-background px-2 py-1 rounded-md border border-border">
+                  {room.inviteCode}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyInviteCode}
+                  className="bg-espresso text-white text-xs font-semibold px-2.5 py-1 rounded-md hover:bg-espresso-muted transition-colors cursor-pointer"
+                >
+                  {copied ? "Copied" : "Copy"}
+                </button>
               </dd>
             </div>
           </>

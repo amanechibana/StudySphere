@@ -18,6 +18,8 @@ export interface Room {
 
   members: string[];
   createdAt: Date;
+  lastUserLeftAt?: Date;
+  isArchived: boolean;
 }
 
 // room fields for insert — MongoDB assigns `_id`

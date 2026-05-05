@@ -36,6 +36,8 @@ export const createRoomBodySchema = z
     capacity: z.number().int().positive().optional(),
     members: z.array(z.string().trim().min(1).max(100)).optional(),
     createdAt: z.coerce.date().optional(),
+    isArchived: z.boolean().optional(),
+    lastUserLeftAt: z.coerce.date().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "No valid fields provided for update",

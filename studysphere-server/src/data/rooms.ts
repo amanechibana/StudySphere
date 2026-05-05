@@ -66,7 +66,7 @@ async function joinPublicRoom(
   const roomId = new ObjectId(id);
   const result = await roomsCollection.findOneAndUpdate(
     { _id: roomId },
-    { $addToSet: { members: userId } },
+    { $addToSet: { members: userId }, $unset: { lastUserLeftAt: "" } },
     { returnDocument: "after" },
   );
 
@@ -82,7 +82,7 @@ async function joinPrivateRoom(
   const roomId = new ObjectId(id);
   const result = await roomsCollection.findOneAndUpdate(
     { _id: roomId, inviteCode },
-    { $addToSet: { members: userId } },
+    { $addToSet: { members: userId }, $unset: { lastUserLeftAt: "" } },
     { returnDocument: "after" },
   );
 
@@ -100,6 +100,15 @@ async function leaveRoom(
     { $pull: { members: userId } } as unknown as UpdateFilter<Document>,
     { returnDocument: "after" },
   );
+
+  if (result && result.members && result.members.length === 0) {
+    const updatedResult = await roomsCollection.findOneAndUpdate(
+      { _id: roomId },
+      { $set: { lastUserLeftAt: new Date() } } as unknown as UpdateFilter<Document>,
+      { returnDocument: "after" },
+    );
+    return updatedResult ?? null;
+  }
 
   return result ?? null;
 }
