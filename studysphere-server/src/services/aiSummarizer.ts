@@ -1,16 +1,11 @@
 import Groq from "groq-sdk";
-
+import type { AIMessage } from "../types/ai.interface.js";
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-type Message = {
-  role: "user" | "assistant" | "system";
-  content: string;
-};
-
 export const summarizeConversation = async (
-  messages: Message[],
+  messages: AIMessage[],
 ): Promise<string> => {
   try {
     const transcript = messages
