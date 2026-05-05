@@ -2,17 +2,23 @@
 
 import useUserStore from "@/app/stores/userStore";
 import { ChatMessage } from "@/app/types/chatMessage.interface";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 interface RoomChatProps {
   messages: ChatMessage[];
   sendMessage: (message: string) => void;
+  hasMore?: boolean;
+  loadMore?: () => void;
+  loadingMore?: boolean;
   minimized?: boolean;
 }
 
 export default function RoomChat({
   messages,
   sendMessage,
+  hasMore = false,
+  loadMore,
+  loadingMore = false,
   minimized = false,
 }: RoomChatProps) {
   const [input, setInput] = useState("");
@@ -20,17 +26,48 @@ export default function RoomChat({
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isNearBottom = useRef(true);
+  const prevScrollHeight = useRef<number | null>(null);
+  const prevMessageCount = useRef(0);
+  const initialScrollDone = useRef(false);
 
   function onScroll() {
     const el = scrollRef.current;
     if (!el) return;
-    isNearBottom.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    isNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (initialScrollDone.current && el.scrollTop < 80 && hasMore && !loadingMore) {
+      loadMore?.();
+    }
   }
 
+  // capture scroll height before older messages are prepended
   useEffect(() => {
-    if (isNearBottom.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (loadingMore) {
+      prevScrollHeight.current = scrollRef.current?.scrollHeight ?? null;
+    }
+  }, [loadingMore]);
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const messageCountIncreased = messages.length > prevMessageCount.current;
+    prevMessageCount.current = messages.length;
+
+    // older messages were prepended and restores position so view doesn't jump
+    if (prevScrollHeight.current !== null && messageCountIncreased && !isNearBottom.current) {
+      el.scrollTop = el.scrollHeight - prevScrollHeight.current;
+      prevScrollHeight.current = null;
+      return;
+    }
+
+    if (messageCountIncreased) {
+      if (!initialScrollDone.current) {
+        // first load, jumps instantly so no scroll events fire near top
+        el.scrollTop = el.scrollHeight;
+        initialScrollDone.current = true;
+      } else if (isNearBottom.current) {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
     }
   }, [messages]);
 
@@ -56,6 +93,11 @@ export default function RoomChat({
         onScroll={onScroll}
         className={`flex-1 overflow-y-auto flex flex-col min-h-0 ${minimized ? "px-3 py-3 gap-2" : "px-6 py-4 gap-3"}`}
       >
+        {loadingMore && (
+          <div className="flex justify-center py-1">
+            <p className="text-xs text-espresso-muted/40">Loading...</p>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">

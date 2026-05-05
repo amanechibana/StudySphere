@@ -54,7 +54,8 @@ function redraw(
 
 export function useCanvasDrawing(
   strokes: Stroke[],
-  setStrokes: Dispatch<SetStateAction<Stroke[]>>
+  setStrokes: Dispatch<SetStateAction<Stroke[]>>,
+  onCommit?: (stroke: Stroke) => void
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tool, setTool] = useState<StrokeTool>("pen");
@@ -138,6 +139,7 @@ export function useCanvasDrawing(
     currentStroke.current = null;
     if (!stroke || stroke.points.length < 2) return;
     setStrokes((prev) => [...prev, stroke]);
+    onCommit?.(stroke);
   }
 
   return {

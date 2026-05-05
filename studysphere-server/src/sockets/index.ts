@@ -10,6 +10,7 @@ import {
   joinPrivateRoom,
 } from "../data/rooms.js";
 import { getUserById } from "../data/users.js";
+import { createMessage } from "../data/messages.js";
 import { z } from "zod";
 import { socketAuthMiddleware } from "./middleware/auth.js";
 import { addStrokeToRoom } from "../data/rooms.js";
@@ -236,14 +237,22 @@ export const initSockets = (io: Server) => {
           return;
         }
 
-        // send message
+        const now = new Date();
+        await createMessage({
+          roomId,
+          senderId: userId,
+          body: message,
+          createdAt: now,
+          updatedAt: now,
+        });
+
         io.to(roomId).emit("receive_message", {
           message,
           user: {
             _id: user._id,
             username: user.username,
           },
-          timestamp: new Date().toISOString(),
+          timestamp: now.toISOString(),
         } as ReceiveMessageData);
       },
     );

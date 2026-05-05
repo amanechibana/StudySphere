@@ -14,6 +14,7 @@ import {
   getMessagesByRoomId,
   createMessage,
 } from "../data/messages.js";
+import { getUserById } from "../data/users.js";
 import type { NewRoom } from "../types/room.interface.js";
 import type { NewMessage } from "../types/message.interface.js";
 import {
@@ -245,8 +246,22 @@ router.get(
     console.log(`GET /rooms/${req.params.id}/messages`);
     try {
       const { before, limit } = req.query;
-      const result = await getMessagesByRoomId(req.params.id, before, limit);
-      res.status(200).json(result);
+      const { messages: docs, hasMore } = await getMessagesByRoomId(req.params.id, before, limit);
+
+      // fetch usernames to add to each message
+      const uniqueSenderIds = [...new Set(docs.map((m) => m.senderId))];
+      const userDocs = await Promise.all(uniqueSenderIds.map((id) => getUserById(id)));
+      const userMap = new Map(
+        userDocs.filter(Boolean).map((u) => [u!._id, u!.username]),
+      );
+
+      const messages = docs.map((m) => ({
+        message: m.body,
+        user: { _id: m.senderId, username: userMap.get(m.senderId) ?? "Unknown" },
+        timestamp: m.createdAt.toISOString(),
+      }));
+
+      res.status(200).json({ messages, hasMore });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to fetch messages" });

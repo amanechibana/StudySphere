@@ -7,6 +7,7 @@ import CanvasToolbar from "./CanvasToolbar";
 interface Props {
   strokes: Stroke[];
   setStrokes: Dispatch<SetStateAction<Stroke[]>>;
+  onCommit?: (stroke: Stroke) => void;
 }
 
 function makeCircleCursor(width: number, color: string, isEraser: boolean): string {
@@ -26,7 +27,7 @@ function makeCircleCursor(width: number, color: string, isEraser: boolean): stri
   return `url(${c.toDataURL()}) ${hot} ${hot}, crosshair`;
 }
 
-export default function RoomCanvas({ strokes, setStrokes }: Props) {
+export default function RoomCanvas({ strokes, setStrokes, onCommit }: Props) {
   const {
     canvasRef,
     tool, setTool,
@@ -34,7 +35,7 @@ export default function RoomCanvas({ strokes, setStrokes }: Props) {
     width, setWidth,
     onPointerDown, onPointerMove, onPointerUp, onPointerLeave,
     undo, canUndo,
-  } = useCanvasDrawing(strokes, setStrokes);
+  } = useCanvasDrawing(strokes, setStrokes, onCommit);
 
   const cursor = useMemo(
     () => makeCircleCursor(width, color, tool === "eraser"),

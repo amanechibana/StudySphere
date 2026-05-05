@@ -10,6 +10,7 @@ import { useChat } from "../../hooks/useChat";
 import { useSocketRoom } from "../../hooks/useSocketRoom";
 import { useRoom } from "../../hooks/useRoom";
 import { type Stroke } from "../../hooks/useCanvasDrawing";
+import { useCanvasSync } from "../../hooks/useCanvasSync";
 import RoomChat from "./RoomChat";
 import RoomCanvas from "../../components/canvas/RoomCanvas";
 import SessionTimer from "./SessionTimer";
@@ -139,7 +140,8 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   const [strokes, setStrokes] = useState<Stroke[]>([]);
 
   const { joinError } = useSocketRoom(id, inviteCode);
-  const { messages, sendMessage } = useChat(id);
+  const { messages, sendMessage, hasMore, loadMore, loadingMore } = useChat(id);
+  const { sendStroke } = useCanvasSync(id, user?._id, setStrokes);
 
   useEffect(() => {
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -226,10 +228,10 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
           <div className="flex gap-6 items-stretch flex-1 min-h-0">
             <div className="w-64 shrink-0 flex flex-col gap-4 min-h-0">
               <SessionTimer h={h} m={m} s={s} />
-              <RoomChat messages={messages} sendMessage={sendMessage} minimized />
+              <RoomChat messages={messages} sendMessage={sendMessage} hasMore={hasMore} loadMore={loadMore} loadingMore={loadingMore} minimized />
             </div>
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
-              <RoomCanvas strokes={strokes} setStrokes={setStrokes} />
+              <RoomCanvas strokes={strokes} setStrokes={setStrokes} onCommit={sendStroke} />
             </div>
             <div className="w-52 shrink-0 flex flex-col gap-4 min-h-0 overflow-y-auto">
               <MembersPanel room={room} userId={user?._id} />
@@ -241,7 +243,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
             <div className="lg:col-span-8 flex flex-col gap-6 min-h-0">
               <SessionTimer h={h} m={m} s={s} />
               <div className="flex-1 min-h-0 flex flex-col">
-                <RoomChat messages={messages} sendMessage={sendMessage} />
+                <RoomChat messages={messages} sendMessage={sendMessage} hasMore={hasMore} loadMore={loadMore} loadingMore={loadingMore} />
               </div>
             </div>
             <div className="lg:col-span-4 flex flex-col gap-3 min-h-0 overflow-y-auto">
