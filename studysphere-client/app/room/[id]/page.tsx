@@ -132,7 +132,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   const { user } = useUserStore();
   const router = useRouter();
   const { disconnect } = useSocketStore();
-  const { data: room, isLoading } = useRoom(id);
+  const { data: room, isLoading, isError } = useRoom(id);
 
   const [elapsed, setElapsed] = useState(0);
   const [canvasOpen, setCanvasOpen] = useState(false);
@@ -154,7 +154,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
     );
   }
 
-  if (!room) {
+  if (isError || !room) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="font-serif italic text-espresso-muted text-lg">Room not found.</p>
