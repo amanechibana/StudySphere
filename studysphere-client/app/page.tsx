@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "./components/Navbar";
@@ -35,6 +36,22 @@ const features = [
 export default function HomePage() {
   const { user } = useAuthStore();
   const primaryHref = user ? "/rooms" : "/signup";
+  const [selectedFeature, setSelectedFeature] = useState<
+    (typeof features)[number] | null
+  >(null);
+
+  useEffect(() => {
+    if (!selectedFeature) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSelectedFeature(null);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedFeature]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,9 +140,12 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {features.map((feature) => (
-                <article
+                <button
+                  type="button"
                   key={feature.title}
-                  className="bg-surface-card border border-border rounded-lg overflow-hidden shadow-sm"
+                  onClick={() => setSelectedFeature(feature)}
+                  className="bg-surface-card border border-border rounded-lg overflow-hidden shadow-sm text-left transition-transform hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-caramel focus:ring-offset-2 focus:ring-offset-surface cursor-pointer"
+                  aria-label={`Enlarge ${feature.title} image`}
                 >
                   <div className="relative aspect-[4/3]">
                     <Image
@@ -144,12 +164,55 @@ export default function HomePage() {
                       {feature.description}
                     </p>
                   </div>
-                </article>
+                </button>
               ))}
             </div>
           </div>
         </section>
       </main>
+
+      {selectedFeature && (
+        <div
+          className="fixed inset-0 z-50 bg-espresso/70 backdrop-blur-sm flex items-center justify-center p-4 md:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label={selectedFeature.title}
+          onClick={() => setSelectedFeature(null)}
+        >
+          <div
+            className="w-full max-w-5xl bg-surface-card border border-border rounded-lg overflow-hidden shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="relative aspect-[4/3] md:aspect-[16/9] bg-background">
+              <Image
+                src={selectedFeature.image}
+                alt={selectedFeature.title}
+                fill
+                className="object-contain"
+                sizes="(min-width: 1024px) 64rem, 92vw"
+                priority
+              />
+            </div>
+            <div className="flex items-start justify-between gap-4 p-5">
+              <div>
+                <h3 className="text-xl font-semibold text-espresso mb-1">
+                  {selectedFeature.title}
+                </h3>
+                <p className="text-sm text-espresso-muted leading-6">
+                  {selectedFeature.description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedFeature(null)}
+                className="shrink-0 border border-border text-espresso text-sm font-semibold px-4 py-2 rounded-lg hover:bg-surface transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
