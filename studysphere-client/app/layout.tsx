@@ -33,6 +33,9 @@ export default function RootLayout({
         <Providers>
           <AuthInit />
           {children}
+          <footer className="border-t border-border bg-surface px-6 py-5 text-center text-sm text-espresso-muted">
+            StudySphere: CS554 Project. Created by: Aidan, Amane, Barnatt, Jimmy, and Takekuni.
+          </footer>
         </Providers>
       </body>
     </html>

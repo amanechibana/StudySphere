@@ -168,7 +168,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <Navbar backHref="/" roomName={room.name} roomSubtitle={room.course} />
+      <Navbar backHref="/rooms" roomName={room.name} roomSubtitle={room.course} />
 
       <main className="w-full max-w-6xl mx-auto px-6 py-6 flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="mb-5 shrink-0 flex items-start justify-between gap-4 flex-wrap">
@@ -231,7 +231,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
               <MembersPanel room={room} userId={user?._id} />
               <DetailsPanel room={room} />
               <button
-                onClick={() => { disconnect(); router.push("/"); }}
+                onClick={() => { disconnect(); router.push("/rooms"); }}
                 className="w-full text-espresso-muted/50 text-xs font-medium py-3 rounded-xl hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all duration-300 cursor-pointer"
               >
                 Leave room

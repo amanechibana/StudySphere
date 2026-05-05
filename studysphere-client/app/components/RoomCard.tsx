@@ -50,7 +50,7 @@ export default function RoomCard({ room, handleJoinRoom }: {
                 {room.isPrivate ? (
                     isRoomOwner ? (
                         <Link
-                            href={`/room/${room._id}?inviteCode=${room.inviteCode}`}
+                            href={`/room/${room._id}?inviteCode=${encodeURIComponent(room.inviteCode)}`}
                             className="bg-espresso text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-espresso-muted transition-colors"
                         >
                             Join →

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useCreateRoom } from "../hooks/useRoom";
 import useUserStore from "../stores/userStore";
 import { createRoomSchema } from "../validation/roomSchema";
-import { Room } from "../types/room.interface";
+import { useRouter } from "next/navigation";
 
 interface CreateRoomModalProps {
   onClose: () => void;
@@ -13,6 +13,7 @@ interface CreateRoomModalProps {
 export default function CreateRoomModal({ onClose }: CreateRoomModalProps) {
   const { user } = useUserStore();
   const { mutate: createRoom, isPending } = useCreateRoom();
+  const router = useRouter();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -20,8 +21,6 @@ export default function CreateRoomModal({ onClose }: CreateRoomModalProps) {
   const [capacity, setCapacity] = useState(6);
   const [isPrivate, setIsPrivate] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdRoom, setCreatedRoom] = useState<Room | null>(null);
-  const [copied, setCopied] = useState(false);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,55 +34,21 @@ export default function CreateRoomModal({ onClose }: CreateRoomModalProps) {
       setError(result.error.issues[0].message);
       return;
     }
-    
+
     setError(null);
     createRoom(
       { ...result.data, ownerId: user!._id },
       {
         onSuccess: (data) => {
-          setCreatedRoom(data);
+          onClose();
+          router.push(
+            data.isPrivate
+              ? `/room/${data._id}?inviteCode=${encodeURIComponent(data.inviteCode)}`
+              : `/room/${data._id}`
+          );
         },
-        onError: () => setError("Failed to create room, please try again"),
+        onError: () => setError("Failed to create room. Please try again."),
       }
-    );
-  }
-
-  if (createdRoom && createdRoom.isPrivate) {
-    return (
-      <div className="fixed inset-0 bg-espresso/30 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-        <div className="bg-surface-card border border-border rounded-2xl p-8 w-full max-w-md shadow-lg">
-          <h2 className="text-xl font-semibold text-espresso mb-1">Room created!</h2>
-          <p className="text-sm text-caramel italic mb-6">Share this code with others to join.</p>
-
-          <div className="bg-background border border-border rounded-lg p-4 mb-6">
-            <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-2">Invite code</p>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-2xl font-mono font-bold text-espresso">{createdRoom.inviteCode}</p>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(createdRoom.inviteCode);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-                className={`px-3 py-2 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                  copied
-                    ? "bg-espresso-muted"
-                    : "bg-espresso hover:bg-espresso-muted"
-                }`}
-              >
-                {copied ? "Copied" : "Copy"}
-              </button>
-            </div>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="w-full bg-espresso text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
-          >
-            Done
-          </button>
-        </div>
-      </div>
     );
   }
 
