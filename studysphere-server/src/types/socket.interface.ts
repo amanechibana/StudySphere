@@ -13,5 +13,5 @@ export interface ReceiveMessageData {
     _id: string;
     username: string;
   };
-  timestamp: Date;
+  timestamp: string;
 }
