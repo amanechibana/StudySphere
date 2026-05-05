@@ -17,6 +17,7 @@ import type {
   ReceiveStrokeData,
   SendStrokeData,
 } from "../types/stroke.interface.js";
+import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
 
 const socketToRoom = new Map<string, string>();
 
@@ -71,6 +72,15 @@ export const initSockets = (io: Server) => {
       // ensures room is active
       if (room.isActive === false) {
         console.log("Room is not active");
+        return;
+      }
+      await updateRoomArchiveStatus(roomId);
+      const updatedRoom = await getRoomById(roomId);
+      if (updatedRoom && isRoomArchived(updatedRoom as any)) {
+        console.log("Room is archived");
+        socket.emit("join_room_error", {
+          error: "Room has been archived",
+        });
         return;
       }
 
