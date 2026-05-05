@@ -10,7 +10,7 @@ import { usernameSchema } from "../validation/authSchema";
 
 export default function OnboardingPage() {
   const { user: firebaseUser, initialized } = useAuthStore();
-  const { user: appUser, setUser } = useUserStore();
+  const { user: appUser, fetchError, setUser } = useUserStore();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -26,9 +26,9 @@ export default function OnboardingPage() {
     if (!firebaseUser) {
       router.push("/login");
     } else if (appUser) {
-      router.push("/");
+      router.push("/rooms");
     }
-  }, [firebaseUser, initialized, router, appUser]);
+  }, [firebaseUser, initialized, router, appUser, fetchError]);
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -49,7 +49,7 @@ export default function OnboardingPage() {
       {
         onSuccess: (createdUser: User) => {
           setUser(createdUser);
-          router.push("/");
+          router.push("/rooms");
         },
         onError: (err) => {
           console.error("Failed to create user: ", err);

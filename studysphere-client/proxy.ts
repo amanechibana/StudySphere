@@ -37,5 +37,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|signup|onboarding|_next|favicon.ico).*)"],
+  matcher: ["/rooms/:path*", "/room/:path*"],
 };

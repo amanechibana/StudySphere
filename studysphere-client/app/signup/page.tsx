@@ -17,7 +17,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (initialized && firebaseUser) {
-      router.push("/");
+      router.push("/rooms");
     }
   }, [firebaseUser, initialized, router]);
 

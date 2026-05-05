@@ -12,6 +12,11 @@ import {
 import { getUserById } from "../data/users.js";
 import { z } from "zod";
 import { socketAuthMiddleware } from "./middleware/auth.js";
+import { addStrokeToRoom } from "../data/rooms.js";
+import type {
+  ReceiveStrokeData,
+  SendStrokeData,
+} from "../types/stroke.interface.js";
 
 const socketToRoom = new Map<string, string>();
 
@@ -23,6 +28,17 @@ const joinRoomSchema = z.object({
 const sendMessageSchema = z.object({
   roomId: z.string(),
   message: z.string(),
+});
+
+const sendStrokeSchema = z.object({
+  roomId: z.string(),
+  stroke: z.object({
+    type: z.enum(["pen", "eraser"]),
+    color: z.string(),
+    width: z.number(),
+    points: z.array(z.object({ x: z.number(), y: z.number() })),
+    timestamp: z.string().datetime(),
+  }),
 });
 
 export const initSockets = (io: Server) => {
@@ -79,13 +95,15 @@ export const initSockets = (io: Server) => {
             _id: user._id,
             username: user.username,
           },
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         } as ReceiveMessageData);
       }
 
       // validate private room invite code (unless user is room owner)
       if (room.isPrivate && room.ownerId !== userId) {
-        console.log(`Private room validation - provided: "${inviteCode}", stored: "${room.inviteCode}"`);
+        console.log(
+          `Private room validation - provided: "${inviteCode}", stored: "${room.inviteCode}"`,
+        );
         if (!inviteCode || inviteCode !== room.inviteCode) {
           console.log(`Invalid invite code for private room ${roomId}`);
           socket.emit("join_room_error", {
@@ -118,11 +136,56 @@ export const initSockets = (io: Server) => {
           _id: user._id,
           username: user.username,
         },
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       } as ReceiveMessageData);
 
       console.log(`User ${socket.id} joined ${roomId}`);
     });
+
+    // send stroke
+    socket.on(
+      "send_stroke",
+      async (payload: z.infer<typeof sendStrokeSchema>) => {
+        const parsed = sendStrokeSchema.safeParse(payload);
+        if (!parsed.success) {
+          console.log("Invalid payload");
+          return;
+        }
+        const { roomId, stroke } = parsed.data;
+        const userId = socket.data.userId;
+        if (!userId) {
+          console.log("Could not fetch user ID");
+          return;
+        }
+        const user = await getUserById(userId);
+        const room = await getRoomById(roomId);
+        if (!user || !room) {
+          console.log("Invalid user or room");
+          return;
+        }
+        if (room.isActive === false) {
+          console.log("Room is not active");
+          return;
+        }
+        if (!room.members.some((m) => m === userId)) {
+          console.log("User is not in room");
+          return;
+        }
+        const result = await addStrokeToRoom(roomId, stroke);
+        if (!result) {
+          console.log("Failed to add stroke to room");
+          return;
+        }
+        io.to(roomId).emit("receive_stroke", {
+          stroke,
+          user: {
+            _id: user._id,
+            username: user.username,
+          },
+          timestamp: new Date().toISOString(),
+        } as ReceiveStrokeData);
+      },
+    );
 
     // send message
     socket.on(
@@ -170,7 +233,7 @@ export const initSockets = (io: Server) => {
             _id: user._id,
             username: user.username,
           },
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         } as ReceiveMessageData);
       },
     );
@@ -205,7 +268,7 @@ export const initSockets = (io: Server) => {
             _id: user._id,
             username: user.username,
           },
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         } as ReceiveMessageData);
       }
       console.log("User disconnected:", socket.id);

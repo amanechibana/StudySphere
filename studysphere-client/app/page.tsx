@@ -1,130 +1,153 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import Navbar from "./components/Navbar";
-import useUserStore from "./stores/userStore";
-import RoomCard from "./components/RoomCard";
-import CreateRoomModal from "./components/CreateRoomModal";
-import { useRooms } from "./hooks/useRoom";
-import { useRouter } from "next/navigation";
+import useAuthStore from "./stores/authStore";
 
-const COURSES = [
-  "All",
-  "CS 401",
-  "MATH 301",
-  "BIO 210",
-  "PHYS 202",
-  "CHEM 110",
+const features = [
+  {
+    title: "Find focused study rooms",
+    description:
+      "Browse open rooms by course, topic, and vibe so you can join a session that matches the work in front of you.",
+    image: "/rooms.jpg",
+  },
+  {
+    title: "Create your own space",
+    description:
+      "Start a public or private room, set the capacity, and invite classmates into a quieter place to get things done.",
+    image: "/create_room.jpg",
+  },
+  {
+    title: "Chat while you study",
+    description:
+      "Keep questions, resources, and quick check-ins in one room while the session timer keeps everyone moving.",
+    image: "/chatroom.jpg",
+  },
+  {
+    title: "Sketch ideas together",
+    description:
+      "Use the shared drawing board to map problems, diagram concepts, and explain tricky ideas visually in real time.",
+    image: "/canvas.jpg",
+  },
 ];
 
 export default function HomePage() {
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [search, setSearch] = useState("");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-
-  const { user } = useUserStore();
-  const { data: rooms = [] } = useRooms();
-  const router = useRouter();
-
-  const filtered = rooms.filter((r) => {
-    const matchesCourse = activeFilter === "All" || r.course === activeFilter;
-    const matchesSearch =
-      search.trim() === "" ||
-      r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.description.toLowerCase().includes(search.toLowerCase());
-    return matchesCourse && matchesSearch;
-  });
-
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-
-  function handleJoinRoom(room: { _id: string; isPrivate: boolean }, inviteCode?: string) {
-    if (room.isPrivate && inviteCode) {
-      router.push(`/room/${room._id}?inviteCode=${encodeURIComponent(inviteCode)}`);
-    } else if (!room.isPrivate) {
-      router.push(`/room/${room._id}`);
-    }
-  }
+  const { user } = useAuthStore();
+  const primaryHref = user ? "/rooms" : "/signup";
+  const secondaryHref = user ? "/rooms" : "/login";
 
   return (
     <div className="min-h-screen bg-background">
-      {showCreateModal && <CreateRoomModal onClose={() => setShowCreateModal(false)} />}
       <Navbar />
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        {/* Hero */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-semibold text-espresso mb-2">
-            {greeting}, {user?.username}.
-          </h1>
-          <p className="text-caramel italic text-lg">
-            Find your focus. Your study rooms are waiting.
-          </p>
-        </div>
-
-        
-        <div className="mb-8 flex flex-col gap-4">
-          {/* Search + actions */}
-          <div className="flex gap-3 items-center">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search rooms by name or topic..."
-              className="flex-1 bg-surface-card border border-border rounded-lg px-4 py-2.5 text-sm text-espresso placeholder:text-border outline-none focus:border-caramel transition-colors"
-            />
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
-            >
-              + Create room
-            </button>
-          </div>
-
-          {/* filter chips */}
-          <div>
-            <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-2">
-              Filter by course
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {COURSES.map((course) => (
-                <button
-                  key={course}
-                  onClick={() => setActiveFilter(course)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
-                    activeFilter === course
-                      ? "bg-espresso text-white border-espresso"
-                      : "bg-transparent text-espresso border-border hover:border-espresso-muted"
-                  }`}
+      <main>
+        <section className="max-w-6xl mx-auto px-6 pt-14 pb-10 md:pt-20 md:pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.95fr] gap-10 lg:gap-14 items-center">
+            <div>
+              <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-4">
+                Collaborative study rooms
+              </p>
+              <h1 className="text-5xl md:text-6xl font-semibold text-espresso tracking-tight leading-[1.05] mb-5">
+                StudySphere
+              </h1>
+              <p className="font-serif italic text-2xl md:text-3xl text-caramel mb-5">
+                Find your focus. Your study rooms are waiting.
+              </p>
+              <p className="text-base md:text-lg text-espresso-muted leading-7 max-w-xl mb-8">
+                StudySphere helps classmates gather around courses, create
+                focused rooms, and stay connected while they work through the
+                hard parts together.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href={primaryHref}
+                  className="bg-espresso text-white text-sm font-semibold px-5 py-3 rounded-lg hover:bg-espresso-muted transition-colors text-center"
                 >
-                  {course}
-                </button>
+                  {user ? "Open study rooms" : "Get started"}
+                </Link>
+                <Link
+                  href={secondaryHref}
+                  className="border border-border text-espresso text-sm font-semibold px-5 py-3 rounded-lg hover:bg-surface transition-colors text-center"
+                >
+                  {user ? "Browse rooms" : "Sign in"}
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative min-h-[360px] md:min-h-[440px]">
+              <div className="absolute left-0 top-6 w-[74%] overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm">
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src="/rooms.jpg"
+                    alt="StudySphere room browsing"
+                    fill
+                    priority
+                    className="object-cover"
+                    sizes="(min-width: 1024px) 34rem, 90vw"
+                  />
+                </div>
+              </div>
+              <div className="absolute right-0 bottom-0 w-[66%] overflow-hidden rounded-lg border border-border bg-surface-card shadow-md">
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src="/create_room.jpg"
+                    alt="StudySphere room creation"
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 1024px) 30rem, 80vw"
+                  />
+                </div>
+              </div>
+              <div className="absolute right-8 top-0 bg-surface-card border border-border rounded-lg px-4 py-3 shadow-sm">
+                <p className="text-[10px] font-semibold tracking-widest uppercase text-espresso-muted">
+                  Live rooms
+                </p>
+                <p className="font-serif italic text-2xl text-caramel">Focus together</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-surface border-y border-border">
+          <div className="max-w-6xl mx-auto px-6 py-12">
+            <div className="mb-8">
+              <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-2">
+                Core functionality
+              </p>
+              <h2 className="text-3xl font-semibold text-espresso">
+                Everything students need to meet, focus, and keep moving.
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {features.map((feature) => (
+                <article
+                  key={feature.title}
+                  className="bg-surface-card border border-border rounded-lg overflow-hidden shadow-sm"
+                >
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={feature.image}
+                      alt={feature.title}
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                    />
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold text-espresso mb-2">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-espresso-muted leading-6">
+                      {feature.description}
+                    </p>
+                  </div>
+                </article>
               ))}
             </div>
           </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-4">
-            Open study rooms
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filtered.length > 0 ? (
-              filtered.map((room) => (
-                <RoomCard 
-                  key={room._id}
-                  room={room}
-                  handleJoinRoom={handleJoinRoom}
-                />
-              ))
-            ) : (
-              <p className="text-sm text-espresso-muted italic col-span-2 py-6">
-                No rooms match your filters.
-              </p>
-            )}
-          </div>
-        </div>
+        </section>
       </main>
     </div>
   );

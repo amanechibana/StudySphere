@@ -3,14 +3,21 @@
 import { useEffect } from "react";
 import useAuthStore from "../stores/authStore";
 import useUserStore from "../stores/userStore";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { onIdTokenChanged } from "firebase/auth";
 import { auth } from "../firebase/firebaseSetup";
 
 export default function AuthInit() {
   const { init, initialized } = useAuthStore();
-  const { clearUser, setUser: setAppUser } = useUserStore();
+  const { clearUser, setUser: setAppUser, setFetchError } = useUserStore();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isProtectedPath =
+    pathname === "/rooms" ||
+    pathname.startsWith("/rooms/") ||
+    pathname.startsWith("/room/") ||
+    pathname === "/onboarding";
 
   useEffect(() => {
     // registers callbacks that will be used to update the user store and returns unsubscribe cleanup function
@@ -35,6 +42,7 @@ export default function AuthInit() {
           }
         } catch (err) {
           console.error("Failed to find app user: ", err);
+          setFetchError(true);
         }
       },
       onLogout: () => {
@@ -42,14 +50,14 @@ export default function AuthInit() {
         clearUser();
 
         const isInitialized = useAuthStore.getState().initialized;
-        if (isInitialized) {
-          router.push("/login");
+        if (isInitialized && isProtectedPath) {
+          router.push("/");
         }
       },
     });
 
     return unsubscribe;
-  }, []);
+  }, [init, isProtectedPath, router, setAppUser, clearUser]);
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
