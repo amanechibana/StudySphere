@@ -35,7 +35,6 @@ const features = [
 export default function HomePage() {
   const { user } = useAuthStore();
   const primaryHref = user ? "/rooms" : "/signup";
-  const secondaryHref = user ? "/rooms" : "/login";
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,12 +65,14 @@ export default function HomePage() {
                 >
                   {user ? "Open study rooms" : "Get started"}
                 </Link>
-                <Link
-                  href={secondaryHref}
-                  className="border border-border text-espresso text-sm font-semibold px-5 py-3 rounded-lg hover:bg-surface transition-colors text-center"
-                >
-                  {user ? "Browse rooms" : "Sign in"}
-                </Link>
+                {!user && (
+                  <Link
+                    href="/login"
+                    className="border border-border text-espresso text-sm font-semibold px-5 py-3 rounded-lg hover:bg-surface transition-colors text-center"
+                  >
+                    Sign in
+                  </Link>
+                )}
               </div>
             </div>
 
