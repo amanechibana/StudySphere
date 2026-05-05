@@ -10,13 +10,27 @@ import {
   leaveRoom,
   joinPrivateRoom,
 } from "../data/rooms.js";
+import {
+  getMessagesByRoomId,
+  createMessage,
+} from "../data/messages.js";
 import type { NewRoom } from "../types/room.interface.js";
-import { validateBody, validateParams } from "../middleware/validateFields.js";
+import type { NewMessage } from "../types/message.interface.js";
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+} from "../middleware/validateFields.js";
 import {
   createRoomBodySchema,
   roomParamsSchema,
   updateRoomBodySchema,
 } from "../schema/room.js";
+import {
+  createMessageBodySchema,
+  listMessagesQuerySchema,
+  type ListMessagesQuery,
+} from "../schema/message.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
@@ -205,6 +219,55 @@ router.post(
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: "Invalid room ID or join failed" });
+    }
+  },
+);
+
+// GET /:id/messages — list messages in room (newest first, paginated)
+router.get(
+  "/:id/messages",
+  validateParams(roomParamsSchema),
+  validateQuery(listMessagesQuerySchema),
+  async (
+    req: Request<{ id: string }, unknown, unknown, ListMessagesQuery>,
+    res: Response,
+  ) => {
+    console.log(`GET /rooms/${req.params.id}/messages`);
+    try {
+      const { before, limit } = req.query;
+      const result = await getMessagesByRoomId(req.params.id, before, limit);
+      res.status(200).json(result);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  },
+);
+
+// POST /:id/messages — create message in room
+router.post(
+  "/:id/messages",
+  validateParams(roomParamsSchema),
+  validateBody(createMessageBodySchema),
+  async (req: Request<{ id: string }>, res: Response) => {
+    console.log(`POST /rooms/${req.params.id}/messages`);
+    try {
+      const { senderId, body } = req.body;
+      const now = new Date();
+      const newMessage: NewMessage = {
+        roomId: req.params.id,
+        senderId,
+        body,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const createdMessage = await createMessage(newMessage);
+
+      res.status(201).json(createdMessage);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to create message" });
     }
   },
 );

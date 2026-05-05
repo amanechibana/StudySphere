@@ -1,6 +1,7 @@
 import type { Collection, Document } from "mongodb";
 import { dbConnection } from "./mongoConnection.js";
 import type { NewRoom } from "../types/room.interface.js";
+import type { NewMessage } from "../types/message.interface.js";
 import type { User } from "../types/user.interface.js";
 
 const getCollectionFn =
@@ -18,4 +19,5 @@ const getCollectionFn =
   };
 
 export const rooms = getCollectionFn<NewRoom>("rooms");
+export const messages = getCollectionFn<NewMessage>("messages");
 export const users = getCollectionFn<User>("users");

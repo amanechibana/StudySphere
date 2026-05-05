@@ -1,6 +1,7 @@
 import type { Application } from "express";
 import roomRoutes from "./rooms.js";
 import userRoutes from "./users.js";
+import messageRoutes from "./messages.js";
 import strokesRoutes from "./strokes.js";
 
 const constructorMethod = (app: Application) => {
@@ -10,6 +11,7 @@ const constructorMethod = (app: Application) => {
 
   app.use("/rooms", roomRoutes);
   app.use("/users", userRoutes);
+  app.use("/messages", messageRoutes);
   app.use("/strokes", strokesRoutes);
 
   app.use(/(.*)/, (_req, res) => {

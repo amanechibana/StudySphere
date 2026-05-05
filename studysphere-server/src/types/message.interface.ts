@@ -1,0 +1,15 @@
+import type { UserId } from "./user.interface.js";
+import type { RoomId } from "./room.interface.js";
+
+export type MessageId = string;
+
+export interface Message {
+  _id: MessageId;
+  roomId: RoomId;
+  senderId: UserId;
+  body: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type NewMessage = Omit<Message, "_id">;
