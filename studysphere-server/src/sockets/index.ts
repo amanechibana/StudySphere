@@ -11,37 +11,23 @@ import {
 } from "../data/rooms.js";
 import { getUserById } from "../data/users.js";
 import { createMessage } from "../data/messages.js";
-import { z } from "zod";
-import { socketAuthMiddleware } from "./middleware/auth.js";
+import { socketAuthMiddleware } from "../middleware/auth.js";
 import { addStrokeToRoom } from "../data/rooms.js";
 import type {
   ReceiveStrokeData,
   SendStrokeData,
 } from "../types/stroke.interface.js";
 import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
+import {
+  joinRoomSchema,
+  sendMessageSchema,
+  sendStrokeSchema,
+  type JoinRoomPayload,
+  type SendMessagePayload,
+  type SendStrokePayload,
+} from "../schema/socket.js";
 
 const socketToRoom = new Map<string, string>();
-
-const joinRoomSchema = z.object({
-  roomId: z.string(),
-  inviteCode: z.string().nullable(),
-});
-
-const sendMessageSchema = z.object({
-  roomId: z.string(),
-  message: z.string(),
-});
-
-const sendStrokeSchema = z.object({
-  roomId: z.string(),
-  stroke: z.object({
-    type: z.enum(["pen", "eraser"]),
-    color: z.string(),
-    width: z.number(),
-    points: z.array(z.object({ x: z.number(), y: z.number() })),
-    timestamp: z.string().datetime(),
-  }),
-});
 
 export const initSockets = (io: Server) => {
   // auth middleware
@@ -53,7 +39,7 @@ export const initSockets = (io: Server) => {
     console.log("User ID:", socket.data.userId);
 
     // join room
-    socket.on("join_room", async (payload: z.infer<typeof joinRoomSchema>) => {
+    socket.on("join_room", async (payload: JoinRoomPayload) => {
       const parsed = joinRoomSchema.safeParse(payload);
       if (!parsed.success) {
         console.log("Invalid payload");
@@ -156,7 +142,7 @@ export const initSockets = (io: Server) => {
     // send stroke
     socket.on(
       "send_stroke",
-      async (payload: z.infer<typeof sendStrokeSchema>) => {
+      async (payload: SendStrokePayload) => {
         const parsed = sendStrokeSchema.safeParse(payload);
         if (!parsed.success) {
           console.log("Invalid payload");
@@ -201,7 +187,7 @@ export const initSockets = (io: Server) => {
     // send message
     socket.on(
       "send_message",
-      async (payload: z.infer<typeof sendMessageSchema>) => {
+      async (payload: SendMessagePayload) => {
         const parsed = sendMessageSchema.safeParse(payload);
         if (!parsed.success) {
           console.log("Invalid payload");
