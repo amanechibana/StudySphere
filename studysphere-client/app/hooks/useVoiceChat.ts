@@ -13,10 +13,30 @@ interface VoiceState {
   members: VoiceMember[];
 }
 
+interface IncomingOffer {
+  fromUserId: string;
+  sdp: string;
+}
+interface IncomingAnswer {
+  fromUserId: string;
+  sdp: string;
+}
+interface IncomingIce {
+  fromUserId: string;
+  candidate: RTCIceCandidateInit;
+}
+
 // dB-ish threshold on a 0–255 byte average; ~12 lands above ambient hum but below normal speech
 const SPEAKING_THRESHOLD = 12;
 // keep "speaking" sticky for a moment after the user stops to avoid flicker between syllables
 const SPEAKING_RELEASE_MS = 350;
+
+const RTC_CONFIG: RTCConfiguration = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+  ],
+};
 
 export function useVoiceChat(roomId: string, currentUserId?: string) {
   const socket = useSocketStore((s) => s.socket);
@@ -33,7 +53,15 @@ export function useVoiceChat(roomId: string, currentUserId?: string) {
   const speakingRef = useRef(false);
   const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // WebRTC mesh: one RTCPeerConnection + one hidden <audio> element per remote peer
+  const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const audioElsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  // queue ICE candidates that arrive before remote description is set
+  const pendingIceRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const inVoiceRef = useRef(false);
+
   const inVoice = !!currentUserId && members.some((m) => m.userId === currentUserId);
+  inVoiceRef.current = inVoice;
 
   useEffect(() => {
     if (!socket) return;
@@ -112,11 +140,183 @@ export function useVoiceChat(roomId: string, currentUserId?: string) {
     [emitSpeaking],
   );
 
+  const teardownPeer = useCallback((peerUserId: string) => {
+    const pc = peersRef.current.get(peerUserId);
+    if (pc) {
+      pc.onicecandidate = null;
+      pc.ontrack = null;
+      pc.onconnectionstatechange = null;
+      pc.close();
+      peersRef.current.delete(peerUserId);
+    }
+    const audio = audioElsRef.current.get(peerUserId);
+    if (audio) {
+      audio.srcObject = null;
+      audio.remove();
+      audioElsRef.current.delete(peerUserId);
+    }
+    pendingIceRef.current.delete(peerUserId);
+  }, []);
+
+  const teardownAllPeers = useCallback(() => {
+    for (const peerId of [...peersRef.current.keys()]) teardownPeer(peerId);
+  }, [teardownPeer]);
+
+  const createPeer = useCallback(
+    (peerUserId: string, isInitiator: boolean): RTCPeerConnection => {
+      const pc = new RTCPeerConnection(RTC_CONFIG);
+      peersRef.current.set(peerUserId, pc);
+
+      // attach our mic tracks
+      streamRef.current?.getTracks().forEach((t) => pc.addTrack(t, streamRef.current!));
+
+      pc.onicecandidate = (e) => {
+        if (e.candidate && socket) {
+          socket.emit("voice_ice", {
+            roomId,
+            toUserId: peerUserId,
+            candidate: e.candidate.toJSON(),
+          });
+        }
+      };
+
+      pc.ontrack = (e) => {
+        let audio = audioElsRef.current.get(peerUserId);
+        if (!audio) {
+          audio = document.createElement("audio");
+          audio.autoplay = true;
+          audio.style.display = "none";
+          document.body.appendChild(audio);
+          audioElsRef.current.set(peerUserId, audio);
+        }
+        audio.srcObject = e.streams[0];
+        // some browsers need an explicit play() once a srcObject is set
+        audio.play().catch(() => {});
+      };
+
+      pc.onconnectionstatechange = () => {
+        const s = pc.connectionState;
+        if (s === "failed" || s === "closed" || s === "disconnected") {
+          teardownPeer(peerUserId);
+        }
+      };
+
+      if (isInitiator) {
+        (async () => {
+          try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket?.emit("voice_offer", {
+              roomId,
+              toUserId: peerUserId,
+              sdp: pc.localDescription!.sdp,
+            });
+          } catch (e) {
+            console.warn("Failed to create offer:", e);
+          }
+        })();
+      }
+
+      return pc;
+    },
+    [socket, roomId, teardownPeer],
+  );
+
+  // create/teardown peers as voice membership changes
+  useEffect(() => {
+    if (!inVoice || !currentUserId || !socket) {
+      // we left voice (or never joined): drop all peers
+      if (peersRef.current.size > 0) teardownAllPeers();
+      return;
+    }
+    const memberIds = new Set(members.map((m) => m.userId));
+
+    // tear down peers for members who left voice
+    for (const peerId of [...peersRef.current.keys()]) {
+      if (!memberIds.has(peerId)) teardownPeer(peerId);
+    }
+
+    // open peers for members we don't yet have one with;
+    // userId comparison decides who initiates so both sides don't send offers (glare avoidance)
+    for (const m of members) {
+      if (m.userId === currentUserId) continue;
+      if (peersRef.current.has(m.userId)) continue;
+      const isInitiator = currentUserId < m.userId;
+      if (isInitiator) createPeer(m.userId, true);
+    }
+  }, [members, inVoice, currentUserId, socket, createPeer, teardownPeer, teardownAllPeers]);
+
+  // handle incoming signaling from other peers
+  useEffect(() => {
+    if (!socket) return;
+
+    async function handleOffer(data: IncomingOffer) {
+      let pc = peersRef.current.get(data.fromUserId);
+      if (!pc) pc = createPeer(data.fromUserId, false);
+      try {
+        await pc.setRemoteDescription({ type: "offer", sdp: data.sdp });
+        // flush any ICE that arrived before remote description was set
+        const queued = pendingIceRef.current.get(data.fromUserId) ?? [];
+        for (const c of queued) await pc.addIceCandidate(c).catch(() => {});
+        pendingIceRef.current.delete(data.fromUserId);
+
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket?.emit("voice_answer", {
+          roomId,
+          toUserId: data.fromUserId,
+          sdp: pc.localDescription!.sdp,
+        });
+      } catch (e) {
+        console.warn("Failed to handle offer:", e);
+      }
+    }
+
+    async function handleAnswer(data: IncomingAnswer) {
+      const pc = peersRef.current.get(data.fromUserId);
+      if (!pc) return;
+      try {
+        await pc.setRemoteDescription({ type: "answer", sdp: data.sdp });
+        const queued = pendingIceRef.current.get(data.fromUserId) ?? [];
+        for (const c of queued) await pc.addIceCandidate(c).catch(() => {});
+        pendingIceRef.current.delete(data.fromUserId);
+      } catch (e) {
+        console.warn("Failed to handle answer:", e);
+      }
+    }
+
+    async function handleIce(data: IncomingIce) {
+      const pc = peersRef.current.get(data.fromUserId);
+      // remote description may not be set yet; queue if so
+      if (!pc || !pc.remoteDescription) {
+        const list = pendingIceRef.current.get(data.fromUserId) ?? [];
+        list.push(data.candidate);
+        pendingIceRef.current.set(data.fromUserId, list);
+        return;
+      }
+      try {
+        await pc.addIceCandidate(data.candidate);
+      } catch (e) {
+        console.warn("Failed to add ICE candidate:", e);
+      }
+    }
+
+    socket.on("voice_offer", handleOffer);
+    socket.on("voice_answer", handleAnswer);
+    socket.on("voice_ice", handleIce);
+    return () => {
+      socket.off("voice_offer", handleOffer);
+      socket.off("voice_answer", handleAnswer);
+      socket.off("voice_ice", handleIce);
+    };
+  }, [socket, roomId, createPeer]);
+
   const stopStream = useCallback(() => {
     teardownAudioGraph();
+    teardownAllPeers();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-  }, [teardownAudioGraph]);
+  }, [teardownAudioGraph, teardownAllPeers]);
 
   const join = useCallback(async () => {
     if (!socket || requesting || streamRef.current) return;
@@ -129,7 +329,6 @@ export function useVoiceChat(roomId: string, currentUserId?: string) {
       setMuted(false);
       socket.emit("voice_join", { roomId });
       startSpeakingDetection(stream);
-      // TODO: establish WebRTC peer connections with other voice members so audio actually flows
     } catch (e) {
       setError(e instanceof Error ? e.message : "Microphone unavailable");
     } finally {
@@ -154,7 +353,7 @@ export function useVoiceChat(roomId: string, currentUserId?: string) {
     socket.emit("voice_mute", { roomId, muted: next });
   }, [socket, roomId, muted, emitSpeaking]);
 
-  // cleanup on unmount: drop mic and tell server we left
+  // cleanup on unmount: drop mic, peers, and tell server we left
   useEffect(() => {
     return () => {
       if (streamRef.current) {
