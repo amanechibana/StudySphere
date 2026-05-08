@@ -11,6 +11,7 @@ import { useSocketRoom } from "../../hooks/useSocketRoom";
 import { useRoom } from "../../hooks/useRoom";
 import { type Stroke } from "../../hooks/useCanvasDrawing";
 import { useCanvasSync } from "../../hooks/useCanvasSync";
+import { useVoiceChat, type VoiceMember } from "../../hooks/useVoiceChat";
 import RoomChat from "./RoomChat";
 import RoomCanvas from "../../components/canvas/RoomCanvas";
 import SessionTimer from "./SessionTimer";
@@ -34,7 +35,64 @@ function formatTime(seconds: number) {
   ].map((v) => v.toString().padStart(2, "0"));
 }
 
-function MembersPanel({ room, userId }: { room: Room; userId?: string }) {
+function VoiceBadge({ voice }: { voice: VoiceMember | undefined }) {
+  if (!voice) return null;
+  if (voice.muted) {
+    return (
+      <span
+        title="Muted"
+        className="inline-flex items-center gap-1 text-[10px] font-medium text-espresso-muted/70 bg-background border border-border rounded-full px-1.5 py-0.5 shrink-0"
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="2" y1="2" x2="22" y2="22" />
+          <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+          <path d="M17 16.95A7 7 0 0 1 5 12v-2" />
+          <path d="M19 10v2a7 7 0 0 1-.11 1.23" />
+          <line x1="12" y1="19" x2="12" y2="23" />
+        </svg>
+        Muted
+      </span>
+    );
+  }
+  if (voice.speaking) {
+    return (
+      <span
+        title="Speaking"
+        className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-full px-1.5 py-0.5 shrink-0"
+      >
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+        </span>
+        Talking
+      </span>
+    );
+  }
+  return (
+    <span
+      title="In voice"
+      className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 shrink-0"
+    >
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="3" width="6" height="11" rx="3" />
+        <path d="M19 11a7 7 0 0 1-14 0" />
+        <line x1="12" y1="18" x2="12" y2="22" />
+      </svg>
+      In voice
+    </span>
+  );
+}
+
+function MembersPanel({
+  room,
+  userId,
+  voiceMembers,
+}: {
+  room: Room;
+  userId?: string;
+  voiceMembers: VoiceMember[];
+}) {
+  const voiceById = new Map(voiceMembers.map((m) => [m.userId, m]));
   return (
     <div className="bg-surface-card border border-border rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3">
@@ -48,21 +106,45 @@ function MembersPanel({ room, userId }: { room: Room; userId?: string }) {
         />
       </div>
       <ul className="space-y-1">
-        {room.members.map((memberId, i) => (
-          <li key={memberId} className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-background/60 transition-colors duration-200">
-            <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs font-semibold ${MEMBER_COLORS[i % MEMBER_COLORS.length]}`}>
-              {String.fromCharCode(65 + i)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-espresso truncate">{memberId === userId ? "You" : `Scholar ${i + 1}`}</p>
-              <p className="text-[11px] text-espresso-muted/60">{memberId === userId ? "That's you!" : "Studying"}</p>
-            </div>
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40 animate-ping" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-          </li>
-        ))}
+        {room.members.map((memberId, i) => {
+          const voice = voiceById.get(memberId);
+          const isSpeaking = voice?.speaking && !voice.muted;
+          return (
+            <li
+              key={memberId}
+              className={`flex items-center gap-2 p-1.5 rounded-xl border transition-colors duration-200 ${
+                isSpeaking
+                  ? "bg-emerald-50/60 border-emerald-200"
+                  : "border-transparent hover:bg-background/60"
+              }`}
+            >
+              <div
+                className={`relative w-7 h-7 rounded-full border flex items-center justify-center text-xs font-semibold ${MEMBER_COLORS[i % MEMBER_COLORS.length]} ${
+                  isSpeaking ? "ring-2 ring-emerald-400/70 ring-offset-1 ring-offset-surface-card" : ""
+                }`}
+              >
+                {String.fromCharCode(65 + i)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-espresso truncate">
+                  {memberId === userId ? "You" : voice?.username ?? `Scholar ${i + 1}`}
+                </p>
+                <p className="text-[11px] text-espresso-muted/60 truncate">
+                  {voice
+                    ? voice.muted
+                      ? "Muted"
+                      : voice.speaking
+                        ? "Speaking..."
+                        : "In voice"
+                    : memberId === userId
+                      ? "That's you!"
+                      : "Studying"}
+                </p>
+              </div>
+              <VoiceBadge voice={voice} />
+            </li>
+          );
+        })}
         {Array.from({ length: room.capacity - room.members.length }).map((_, i) => (
           <li key={`empty-${i}`} className="flex items-center gap-2 p-1.5 rounded-xl opacity-30">
             <div className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center">
@@ -142,6 +224,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   const { joinError } = useSocketRoom(id, inviteCode);
   const { messages, sendMessage, hasMore, loadMore, loadingMore } = useChat(id);
   const { sendStroke } = useCanvasSync(id, user?._id, setStrokes);
+  const voice = useVoiceChat(id, user?._id);
 
   useEffect(() => {
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -228,13 +311,13 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
           <div className="flex gap-6 items-stretch flex-1 min-h-0">
             <div className="w-64 shrink-0 flex flex-col gap-4 min-h-0">
               <SessionTimer h={h} m={m} s={s} />
-              <RoomChat messages={messages} sendMessage={sendMessage} hasMore={hasMore} loadMore={loadMore} loadingMore={loadingMore} minimized />
+              <RoomChat voice={voice} messages={messages} sendMessage={sendMessage} hasMore={hasMore} loadMore={loadMore} loadingMore={loadingMore} minimized />
             </div>
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
               <RoomCanvas strokes={strokes} setStrokes={setStrokes} onCommit={sendStroke} />
             </div>
             <div className="w-52 shrink-0 flex flex-col gap-4 min-h-0 overflow-y-auto">
-              <MembersPanel room={room} userId={user?._id} />
+              <MembersPanel room={room} userId={user?._id} voiceMembers={voice.members} />
               <DetailsPanel room={room} />
             </div>
           </div>
@@ -243,11 +326,11 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
             <div className="lg:col-span-8 flex flex-col gap-6 min-h-0">
               <SessionTimer h={h} m={m} s={s} />
               <div className="flex-1 min-h-0 flex flex-col">
-                <RoomChat messages={messages} sendMessage={sendMessage} hasMore={hasMore} loadMore={loadMore} loadingMore={loadingMore} />
+                <RoomChat voice={voice} messages={messages} sendMessage={sendMessage} hasMore={hasMore} loadMore={loadMore} loadingMore={loadingMore} />
               </div>
             </div>
             <div className="lg:col-span-4 flex flex-col gap-3 min-h-0 overflow-y-auto">
-              <MembersPanel room={room} userId={user?._id} />
+              <MembersPanel room={room} userId={user?._id} voiceMembers={voice.members} />
               <DetailsPanel room={room} />
               <button
                 onClick={() => { disconnect(); router.push("/rooms"); }}
