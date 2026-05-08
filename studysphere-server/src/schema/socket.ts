@@ -21,6 +21,49 @@ export const sendStrokeSchema = z.object({
   }),
 });
 
+export const voiceJoinSchema = z.object({
+  roomId: z.string(),
+});
+
+export const voiceLeaveSchema = z.object({
+  roomId: z.string(),
+});
+
+export const voiceMuteSchema = z.object({
+  roomId: z.string(),
+  muted: z.boolean(),
+});
+
+export const voiceSpeakingSchema = z.object({
+  roomId: z.string(),
+  speaking: z.boolean(),
+});
+
+export const voiceOfferSchema = z.object({
+  roomId: z.string(),
+  toUserId: z.string(),
+  sdp: z.string(),
+});
+
+export const voiceAnswerSchema = z.object({
+  roomId: z.string(),
+  toUserId: z.string(),
+  sdp: z.string(),
+});
+
+export const voiceIceSchema = z.object({
+  roomId: z.string(),
+  toUserId: z.string(),
+  candidate: z.any(),
+});
+
 export type JoinRoomPayload = z.infer<typeof joinRoomSchema>;
 export type SendMessagePayload = z.infer<typeof sendMessageSchema>;
 export type SendStrokePayload = z.infer<typeof sendStrokeSchema>;
+export type VoiceJoinPayload = z.infer<typeof voiceJoinSchema>;
+export type VoiceLeavePayload = z.infer<typeof voiceLeaveSchema>;
+export type VoiceMutePayload = z.infer<typeof voiceMuteSchema>;
+export type VoiceSpeakingPayload = z.infer<typeof voiceSpeakingSchema>;
+export type VoiceOfferPayload = z.infer<typeof voiceOfferSchema>;
+export type VoiceAnswerPayload = z.infer<typeof voiceAnswerSchema>;
+export type VoiceIcePayload = z.infer<typeof voiceIceSchema>;

@@ -22,12 +22,61 @@ import {
   joinRoomSchema,
   sendMessageSchema,
   sendStrokeSchema,
+  voiceJoinSchema,
+  voiceLeaveSchema,
+  voiceMuteSchema,
+  voiceSpeakingSchema,
+  voiceOfferSchema,
+  voiceAnswerSchema,
+  voiceIceSchema,
   type JoinRoomPayload,
   type SendMessagePayload,
   type SendStrokePayload,
+  type VoiceJoinPayload,
+  type VoiceLeavePayload,
+  type VoiceMutePayload,
+  type VoiceSpeakingPayload,
+  type VoiceOfferPayload,
+  type VoiceAnswerPayload,
+  type VoiceIcePayload,
 } from "../schema/socket.js";
 
 const socketToRoom = new Map<string, string>();
+
+type VoiceMember = {
+  userId: string;
+  username: string;
+  muted: boolean;
+  speaking: boolean;
+  socketId: string;
+};
+type PublicVoiceMember = Omit<VoiceMember, "socketId">;
+const roomVoiceMembers = new Map<string, Map<string, VoiceMember>>();
+
+function toPublic(m: VoiceMember): PublicVoiceMember {
+  // socketId is internal (used for signaling relay) and must not leak to clients
+  const { socketId: _socketId, ...rest } = m;
+  return rest;
+}
+
+function getVoiceMembers(roomId: string): PublicVoiceMember[] {
+  return Array.from(roomVoiceMembers.get(roomId)?.values() ?? []).map(toPublic);
+}
+
+function broadcastVoiceState(io: Server, roomId: string) {
+  io.to(roomId).emit("voice_state", {
+    roomId,
+    members: getVoiceMembers(roomId),
+  });
+}
+
+function removeFromVoice(io: Server, roomId: string, userId: string) {
+  const members = roomVoiceMembers.get(roomId);
+  if (!members?.delete(userId)) return false;
+  if (members.size === 0) roomVoiceMembers.delete(roomId);
+  broadcastVoiceState(io, roomId);
+  return true;
+}
 
 export const initSockets = (io: Server) => {
   // auth middleware
@@ -243,6 +292,104 @@ export const initSockets = (io: Server) => {
       },
     );
 
+    // voice: join
+    socket.on("voice_join", async (payload: VoiceJoinPayload) => {
+      const parsed = voiceJoinSchema.safeParse(payload);
+      if (!parsed.success) return;
+      const { roomId } = parsed.data;
+      const userId = socket.data.userId;
+      if (!userId) return;
+
+      const user = await getUserById(userId);
+      const room = await getRoomById(roomId);
+      if (!user || !room || room.isActive === false) return;
+      if (!room.members.some((m) => m === userId)) return;
+
+      const members = roomVoiceMembers.get(roomId) ?? new Map<string, VoiceMember>();
+      members.set(userId, {
+        userId,
+        username: user.username,
+        muted: false,
+        speaking: false,
+        socketId: socket.id,
+      });
+      roomVoiceMembers.set(roomId, members);
+
+      // current voice members for the joiner; broadcast updated state to everyone
+      socket.emit("voice_state", { roomId, members: getVoiceMembers(roomId) });
+      broadcastVoiceState(io, roomId);
+    });
+
+    // voice: leave
+    socket.on("voice_leave", async (payload: VoiceLeavePayload) => {
+      const parsed = voiceLeaveSchema.safeParse(payload);
+      if (!parsed.success) return;
+      const userId = socket.data.userId;
+      if (!userId) return;
+      removeFromVoice(io, parsed.data.roomId, userId);
+    });
+
+    // voice: mute toggle
+    socket.on("voice_mute", async (payload: VoiceMutePayload) => {
+      const parsed = voiceMuteSchema.safeParse(payload);
+      if (!parsed.success) return;
+      const { roomId, muted } = parsed.data;
+      const userId = socket.data.userId;
+      if (!userId) return;
+      const member = roomVoiceMembers.get(roomId)?.get(userId);
+      if (!member) return;
+      member.muted = muted;
+      // muted users cannot be marked as speaking
+      if (muted) member.speaking = false;
+      broadcastVoiceState(io, roomId);
+    });
+
+    // voice: speaking activity (debounced by client)
+    socket.on("voice_speaking", async (payload: VoiceSpeakingPayload) => {
+      const parsed = voiceSpeakingSchema.safeParse(payload);
+      if (!parsed.success) return;
+      const { roomId, speaking } = parsed.data;
+      const userId = socket.data.userId;
+      if (!userId) return;
+      const member = roomVoiceMembers.get(roomId)?.get(userId);
+      if (!member || member.muted) return;
+      if (member.speaking === speaking) return;
+      member.speaking = speaking;
+      broadcastVoiceState(io, roomId);
+    });
+
+    // voice: WebRTC signaling relay (offer/answer/ice between specific peers)
+    function relaySignal<T extends { roomId: string; toUserId: string }>(
+      eventName: string,
+      payload: T,
+      data: Record<string, unknown>,
+    ) {
+      const fromUserId = socket.data.userId;
+      if (!fromUserId) return;
+      const sender = roomVoiceMembers.get(payload.roomId)?.get(fromUserId);
+      const target = roomVoiceMembers.get(payload.roomId)?.get(payload.toUserId);
+      if (!sender || !target) return;
+      io.to(target.socketId).emit(eventName, { fromUserId, ...data });
+    }
+
+    socket.on("voice_offer", (payload: VoiceOfferPayload) => {
+      const parsed = voiceOfferSchema.safeParse(payload);
+      if (!parsed.success) return;
+      relaySignal("voice_offer", parsed.data, { sdp: parsed.data.sdp });
+    });
+
+    socket.on("voice_answer", (payload: VoiceAnswerPayload) => {
+      const parsed = voiceAnswerSchema.safeParse(payload);
+      if (!parsed.success) return;
+      relaySignal("voice_answer", parsed.data, { sdp: parsed.data.sdp });
+    });
+
+    socket.on("voice_ice", (payload: VoiceIcePayload) => {
+      const parsed = voiceIceSchema.safeParse(payload);
+      if (!parsed.success) return;
+      relaySignal("voice_ice", parsed.data, { candidate: parsed.data.candidate });
+    });
+
     // disconnect
     socket.on("disconnect", async () => {
       const userId = socket.data.userId;
@@ -258,6 +405,9 @@ export const initSockets = (io: Server) => {
       // leave room
       const roomId = socketToRoom.get(socket.id);
       if (roomId) {
+        // remove from voice channel if present
+        removeFromVoice(io, roomId, userId);
+
         socket.leave(roomId);
         console.log(`User ${socket.id} left ${roomId}`);
         socketToRoom.delete(socket.id);

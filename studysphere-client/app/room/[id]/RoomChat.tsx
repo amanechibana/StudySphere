@@ -3,8 +3,21 @@
 import useUserStore from "@/app/stores/userStore";
 import { ChatMessage } from "@/app/types/chatMessage.interface";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { VoiceMember } from "@/app/hooks/useVoiceChat";
+
+interface VoiceProp {
+  members: VoiceMember[];
+  inVoice: boolean;
+  muted: boolean;
+  error: string | null;
+  requesting: boolean;
+  join: () => void;
+  leave: () => void;
+  toggleMute: () => void;
+}
 
 interface RoomChatProps {
+  voice: VoiceProp;
   messages: ChatMessage[];
   sendMessage: (message: string) => void;
   hasMore?: boolean;
@@ -13,7 +26,102 @@ interface RoomChatProps {
   minimized?: boolean;
 }
 
+function VoiceControls({
+  inVoice,
+  muted,
+  members,
+  requesting,
+  error,
+  currentUserId,
+  onJoin,
+  onLeave,
+  onToggleMute,
+  minimized,
+}: {
+  inVoice: boolean;
+  muted: boolean;
+  members: VoiceMember[];
+  requesting: boolean;
+  error: string | null;
+  currentUserId?: string;
+  onJoin: () => void;
+  onLeave: () => void;
+  onToggleMute: () => void;
+  minimized: boolean;
+}) {
+  if (!inVoice) {
+    return (
+      <div className="flex items-center gap-2">
+        {members.length > 0 && (
+          <span className="text-[11px] text-espresso-muted/70">
+            {members.length} in voice
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={onJoin}
+          disabled={requesting}
+          title={error ?? undefined}
+          className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors cursor-pointer ${
+            error
+              ? "border-red-300 text-red-600 hover:bg-red-50"
+              : "border-border text-espresso-muted hover:border-espresso-muted hover:text-espresso"
+          } ${requesting ? "opacity-60 cursor-wait" : ""}`}
+        >
+          {requesting ? "Connecting..." : error ? "Mic blocked" : "Join voice"}
+        </button>
+      </div>
+    );
+  }
+
+  const others = members.filter((m) => m.userId !== currentUserId);
+
+  return (
+    <div className="flex items-center gap-2">
+      {!minimized && others.length > 0 && (
+        <div className="flex items-center gap-1 mr-1">
+          {others.slice(0, 3).map((m) => (
+            <span
+              key={m.userId}
+              title={m.username}
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-full border text-[10px] font-semibold ${
+                m.muted
+                  ? "bg-background border-border text-espresso-muted/60"
+                  : "bg-emerald-50 border-emerald-200 text-emerald-700"
+              }`}
+            >
+              {m.username.charAt(0).toUpperCase()}
+            </span>
+          ))}
+          {others.length > 3 && (
+            <span className="text-[10px] text-espresso-muted/60">+{others.length - 3}</span>
+          )}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={onToggleMute}
+        className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors cursor-pointer ${
+          muted
+            ? "bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100"
+            : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+        }`}
+      >
+        {muted ? "Unmute" : "Mute"}
+      </button>
+      <button
+        type="button"
+        onClick={onLeave}
+        className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-border text-espresso-muted hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+      >
+        Leave
+      </button>
+    </div>
+  );
+}
+
 export default function RoomChat({
+  voice,
   messages,
   sendMessage,
   hasMore = false,
@@ -81,11 +189,23 @@ export default function RoomChat({
   return (
     <div className="bg-surface-card border border-border rounded-2xl flex flex-col flex-1 overflow-hidden">
       <div
-        className={`border-b border-border/60 ${minimized ? "px-4 pt-4 pb-3" : "px-6 pt-6 pb-4"}`}
+        className={`border-b border-border/60 flex items-center justify-between gap-3 ${minimized ? "px-4 pt-4 pb-3" : "px-6 pt-6 pb-4"}`}
       >
         <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase">
           Room chat
         </p>
+        <VoiceControls
+          inVoice={voice.inVoice}
+          muted={voice.muted}
+          members={voice.members}
+          requesting={voice.requesting}
+          error={voice.error}
+          currentUserId={user?._id}
+          onJoin={voice.join}
+          onLeave={voice.leave}
+          onToggleMute={voice.toggleMute}
+          minimized={minimized}
+        />
       </div>
 
       <div
