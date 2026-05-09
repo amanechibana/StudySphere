@@ -1,3 +1,6 @@
+import type { WithId } from "mongodb";
+import type { NewRoom } from "./room.interface.js";
+
 export type Point = {
   x: number;
   y: number;
@@ -25,4 +28,9 @@ export type ReceiveStrokeData = {
 export type SendStrokeData = {
   roomId: string;
   stroke: Stroke;
+};
+
+export type UndoStrokeResult = {
+  room: WithId<NewRoom>;
+  removedStroke: Stroke;
 };

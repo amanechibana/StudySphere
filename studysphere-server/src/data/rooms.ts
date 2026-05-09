@@ -7,7 +7,7 @@ import {
 import { rooms } from "../config/mongoCollections.js";
 import type { RoomId, NewRoom } from "../types/room.interface.js";
 import type { UserId } from "../types/user.interface.js";
-import type { Stroke } from "../types/stroke.interface.js";
+import type { Stroke, UndoStrokeResult } from "../types/stroke.interface.js";
 
 async function getRooms() {
   const roomsCollection = await rooms();
@@ -129,7 +129,7 @@ async function addStrokeToRoom(
   return result ?? null;
 }
 
-async function undoStroke(id: RoomId): Promise<WithId<NewRoom> | null> {
+async function undoStroke(id: RoomId): Promise<UndoStrokeResult | null> {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
 
@@ -150,8 +150,12 @@ async function undoStroke(id: RoomId): Promise<WithId<NewRoom> | null> {
     { $pull: { strokes: latestStroke } },
     { returnDocument: "after" },
   );
+  if (!result) {
+    console.log("Failed to undo stroke");
+    return null;
+  }
 
-  return result ?? null;
+  return { room: result, removedStroke: latestStroke };
 }
 
 export {
