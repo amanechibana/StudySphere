@@ -104,7 +104,6 @@ export default function RoomsPage() {
             </label>
             <button
               id="course-filter"
-              type="button"
               onClick={() => setIsCourseFilterOpen((open) => !open)}
               className="flex w-full items-center justify-between gap-3 bg-surface-card border border-border rounded-lg px-4 py-2.5 text-left text-sm font-medium text-espresso outline-none focus:border-caramel transition-colors cursor-pointer"
             >
@@ -120,7 +119,6 @@ export default function RoomsPage() {
                 style={{ maxHeight: "min(24rem, calc(100vh - 16rem))" }}
               >
                 <button
-                  type="button"
                   onClick={() => setSelectedCourses([])}
                   className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors cursor-pointer ${
                     activeCourses.length === 0
