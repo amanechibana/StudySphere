@@ -104,7 +104,9 @@ async function leaveRoom(
   if (result && result.members && result.members.length === 0) {
     const updatedResult = await roomsCollection.findOneAndUpdate(
       { _id: roomId },
-      { $set: { lastUserLeftAt: new Date() } } as unknown as UpdateFilter<Document>,
+      {
+        $set: { lastUserLeftAt: new Date() },
+      } as unknown as UpdateFilter<Document>,
       { returnDocument: "after" },
     );
     return updatedResult ?? null;
@@ -127,6 +129,31 @@ async function addStrokeToRoom(
   return result ?? null;
 }
 
+async function undoStroke(id: RoomId): Promise<WithId<NewRoom> | null> {
+  const roomsCollection = await rooms();
+  const roomId = new ObjectId(id);
+
+  const room = await roomsCollection.findOne({ _id: roomId });
+  if (!room || !room.strokes || room.strokes.length === 0) {
+    console.log("No strokes to undo");
+    return null;
+  }
+
+  const latestStroke = room.strokes.reduce((latest, current) => {
+    return new Date(current.timestamp) > new Date(latest.timestamp)
+      ? current
+      : latest;
+  });
+
+  const result = await roomsCollection.findOneAndUpdate(
+    { _id: roomId },
+    { $pull: { strokes: latestStroke } },
+    { returnDocument: "after" },
+  );
+
+  return result ?? null;
+}
+
 export {
   getRoomById,
   createRoom,
@@ -137,4 +164,5 @@ export {
   joinPrivateRoom,
   leaveRoom,
   addStrokeToRoom,
+  undoStroke,
 };
