@@ -51,10 +51,11 @@ az containerapp update -n "$SERVER_APP" -g "$RG" \
   --image "$SERVER_IMAGE" \
   --set-env-vars \
     "MONGODB_URI=$MONGODB_URI" \
+    "REDIS_URL=$REDIS_URL" \
     "FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID" \
     "FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL" \
     "FIREBASE_PRIVATE_KEY=$FIREBASE_PRIVATE_KEY" \
-    "ALLOWED_ORIGIN=$CLIENT_URL" \
+    "CLIENT_ORIGIN=$CLIENT_URL" \
   >/dev/null
 
 echo "==> updating client container app"
