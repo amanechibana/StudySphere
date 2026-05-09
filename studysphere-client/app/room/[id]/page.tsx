@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import Navbar from "../../components/Navbar";
 import useUserStore from "../../stores/userStore";
@@ -214,8 +215,22 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
 
   const { user } = useUserStore();
   const router = useRouter();
-  const { disconnect } = useSocketStore();
+  const { disconnect, socket } = useSocketStore();
+  const queryClient = useQueryClient();
   const { data: room, isLoading, isError } = useRoom(id);
+
+  useEffect(() => {
+    if (!socket) return;
+    function refresh() {
+      queryClient.invalidateQueries({ queryKey: ["room", id] });
+    }
+    socket.on("user_joined", refresh);
+    socket.on("user_left", refresh);
+    return () => {
+      socket.off("user_joined", refresh);
+      socket.off("user_left", refresh);
+    };
+  }, [socket, id, queryClient]);
 
   const [elapsed, setElapsed] = useState(0);
   const [canvasOpen, setCanvasOpen] = useState(false);
