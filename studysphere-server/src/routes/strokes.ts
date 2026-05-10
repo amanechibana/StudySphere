@@ -11,6 +11,7 @@ const router = Router();
 router.get(
   "/:id",
   validateParams(roomParamsSchema),
+  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /strokes/${req.params.id}`);
     try {

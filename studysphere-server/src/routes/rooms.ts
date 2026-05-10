@@ -10,10 +10,7 @@ import {
   leaveRoom,
   joinPrivateRoom,
 } from "../data/rooms.js";
-import {
-  getMessagesByRoomId,
-  createMessage,
-} from "../data/messages.js";
+import { getMessagesByRoomId, createMessage } from "../data/messages.js";
 import { getUserById } from "../data/users.js";
 import type { NewRoom } from "../types/room.interface.js";
 import type { NewMessage } from "../types/message.interface.js";
@@ -38,7 +35,7 @@ import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
 const router = Router();
 
 // GET /
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", requireAuth, async (_req: Request, res: Response) => {
   console.log("GET /rooms");
   try {
     const allRooms = await getRooms();
@@ -54,6 +51,7 @@ router.get("/", async (_req: Request, res: Response) => {
 router.get(
   "/:id",
   validateParams(roomParamsSchema),
+  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /rooms/${req.params.id}`);
     try {
@@ -78,6 +76,7 @@ router.get(
 router.post(
   "/",
   validateBody(createRoomBodySchema),
+  requireAuth,
   async (req: Request, res: Response) => {
     console.log("POST /rooms");
     try {
@@ -114,6 +113,7 @@ router.patch(
   "/:id",
   validateParams(roomParamsSchema),
   validateBody(updateRoomBodySchema),
+  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`PATCH /rooms/${req.params.id}`);
     try {
@@ -137,6 +137,7 @@ router.patch(
 router.delete(
   "/:id",
   validateParams(roomParamsSchema),
+  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`DELETE /rooms/${req.params.id}`);
     try {
@@ -239,6 +240,7 @@ router.get(
   "/:id/messages",
   validateParams(roomParamsSchema),
   validateQuery(listMessagesQuerySchema),
+  requireAuth,
   async (
     req: Request<{ id: string }, unknown, unknown, ListMessagesQuery>,
     res: Response,
@@ -246,18 +248,27 @@ router.get(
     console.log(`GET /rooms/${req.params.id}/messages`);
     try {
       const { before, limit } = req.query;
-      const { messages: docs, hasMore } = await getMessagesByRoomId(req.params.id, before, limit);
+      const { messages: docs, hasMore } = await getMessagesByRoomId(
+        req.params.id,
+        before,
+        limit,
+      );
 
       // fetch usernames to add to each message
       const uniqueSenderIds = [...new Set(docs.map((m) => m.senderId))];
-      const userDocs = await Promise.all(uniqueSenderIds.map((id) => getUserById(id)));
+      const userDocs = await Promise.all(
+        uniqueSenderIds.map((id) => getUserById(id)),
+      );
       const userMap = new Map(
         userDocs.filter(Boolean).map((u) => [u!._id, u!.username]),
       );
 
       const messages = docs.map((m) => ({
         message: m.body,
-        user: { _id: m.senderId, username: userMap.get(m.senderId) ?? "Unknown" },
+        user: {
+          _id: m.senderId,
+          username: userMap.get(m.senderId) ?? "Unknown",
+        },
         timestamp: m.createdAt.toISOString(),
       }));
 
@@ -274,6 +285,7 @@ router.post(
   "/:id/messages",
   validateParams(roomParamsSchema),
   validateBody(createMessageBodySchema),
+  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`POST /rooms/${req.params.id}/messages`);
     try {
