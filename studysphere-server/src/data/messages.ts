@@ -58,6 +58,14 @@ async function getMessagesBySenderId(
   return fetchMessagePage({ senderId }, before, limit);
 }
 
+async function getAllMessagesByRoomId(roomId: RoomId) {
+  const messagesCollection = await messages();
+  return await messagesCollection
+    .find({ roomId })
+    .sort({ createdAt: 1 })
+    .toArray();
+}
+
 async function getMessageById(id: MessageId) {
   const messagesCollection = await messages();
   const message = await messagesCollection.findOne({ _id: new ObjectId(id) });
@@ -80,7 +88,9 @@ async function updateMessage(
   const messageId = new ObjectId(id);
 
   const write = Object.fromEntries(
-    Object.entries(partial as object).filter(([, value]) => value !== undefined),
+    Object.entries(partial as object).filter(
+      ([, value]) => value !== undefined,
+    ),
   ) as Record<string, unknown>;
 
   const result = await messagesCollection.findOneAndUpdate(
@@ -103,6 +113,7 @@ async function deleteMessage(id: MessageId) {
 export {
   getMessagesByRoomId,
   getMessagesBySenderId,
+  getAllMessagesByRoomId,
   getMessageById,
   createMessage,
   updateMessage,

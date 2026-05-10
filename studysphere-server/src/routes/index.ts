@@ -3,6 +3,7 @@ import roomRoutes from "./rooms.js";
 import userRoutes from "./users.js";
 import messageRoutes from "./messages.js";
 import strokesRoutes from "./strokes.js";
+import conversationRoutes from "./conversation.js";
 
 const constructorMethod = (app: Application) => {
   app.get("/health", (_req, res) => {
@@ -13,6 +14,7 @@ const constructorMethod = (app: Application) => {
   app.use("/users", userRoutes);
   app.use("/messages", messageRoutes);
   app.use("/strokes", strokesRoutes);
+  app.use("/conversation", conversationRoutes);
 
   app.use(/(.*)/, (_req, res) => {
     res.status(404).json({ error: "Route not found" });
