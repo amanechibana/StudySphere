@@ -129,7 +129,7 @@ async function addStrokeToRoom(
   return result ?? null;
 }
 
-async function undoStroke(id: RoomId): Promise<UndoStrokeResult | null> {
+async function undoStrokeToRoom(id: RoomId): Promise<UndoStrokeResult | null> {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
 
@@ -168,5 +168,5 @@ export {
   joinPrivateRoom,
   leaveRoom,
   addStrokeToRoom,
-  undoStroke,
+  undoStrokeToRoom,
 };

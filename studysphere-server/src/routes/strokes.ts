@@ -4,7 +4,7 @@ import { getRoomById } from "../data/rooms.js";
 import { validateParams } from "../middleware/validateFields.js";
 import { roomParamsSchema } from "../schema/room.js";
 import { requireAuth } from "../middleware/auth.js";
-import { undoStroke } from "../data/rooms.js";
+import { undoStrokeToRoom } from "../data/rooms.js";
 
 const router = Router();
 
@@ -36,7 +36,7 @@ router.post(
     console.log(`POST /strokes/:id/undo`);
     try {
       const roomId = req.params.id;
-      const undoResult = await undoStroke(roomId);
+      const undoResult = await undoStrokeToRoom(roomId);
       if (!undoResult) {
         return res.status(404).json({ error: "Failed to undo stroke" });
       }

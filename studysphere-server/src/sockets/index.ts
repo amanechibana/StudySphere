@@ -12,7 +12,7 @@ import {
 import { getUserById } from "../data/users.js";
 import { createMessage } from "../data/messages.js";
 import { socketAuthMiddleware } from "../middleware/auth.js";
-import { addStrokeToRoom, undoStroke } from "../data/rooms.js";
+import { addStrokeToRoom, undoStrokeToRoom } from "../data/rooms.js";
 import type {
   ReceiveStrokeData,
   SendStrokeData,
@@ -234,7 +234,7 @@ export const initSockets = (io: Server) => {
     socket.on("undo_stroke", async () => {
       const roomId = socketToRoom.get(socket.id);
       if (!roomId) return;
-      const undoResult = await undoStroke(roomId);
+      const undoResult = await undoStrokeToRoom(roomId);
       if (!undoResult) {
         console.log("Failed to undo stroke");
         return;
