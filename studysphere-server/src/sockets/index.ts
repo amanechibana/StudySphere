@@ -438,7 +438,12 @@ export const initSockets = (io: Server) => {
         socketToRoom.delete(socket.id);
 
         // removes user from room in database
-        await leaveRoom(roomId, userId);
+        const leftRoom = await leaveRoom(roomId, userId);
+
+        // if room is now empty, update archive status
+        if (leftRoom && leftRoom.members && leftRoom.members.length === 0) {
+          await updateRoomArchiveStatus(roomId);
+        }
 
         // notify users that the user left the room
         const message = `${user.username} left the room`;

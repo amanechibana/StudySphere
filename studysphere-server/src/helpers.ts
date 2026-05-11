@@ -1,7 +1,7 @@
 import type { Room } from "./types/room.interface.js";
 import type { NewRoom } from "./types/room.interface.js";
 import type { WithId } from "mongodb";
-import { updateRoom } from "./data/rooms.js";
+import { updateRoom, getRooms } from "./data/rooms.js";
 
 const ARCHIVE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
 
@@ -43,10 +43,30 @@ async function updateRoomArchiveStatus(roomId: string): Promise<WithId<NewRoom> 
   return room;
 }
 
+/**
+ * Background job to archive inactive rooms
+ * Runs periodically to check all rooms and archive those that have been empty for 1+ hour
+ */
+async function archiveInactiveRooms(): Promise<void> {
+  try {
+    const allRooms = await getRooms();
+    
+    for (const room of allRooms) {
+      if (isRoomArchived(room as any) && !room.isArchived) {
+        await updateRoom(room._id.toString(), { isArchived: true });
+        console.log(`Archived inactive room: ${room.name} (${room._id})`);
+      }
+    }
+  } catch (error) {
+    console.error("Error archiving inactive rooms:", error);
+  }
+}
+
 const exportedMethods: Record<string, unknown> = {
   isRoomArchived,
   updateRoomArchiveStatus,
+  archiveInactiveRooms,
 };
 
-export { isRoomArchived, updateRoomArchiveStatus };
+export { isRoomArchived, updateRoomArchiveStatus, archiveInactiveRooms };
 export default exportedMethods;

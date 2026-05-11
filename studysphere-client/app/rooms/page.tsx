@@ -21,7 +21,7 @@ export default function RoomsPage() {
 
   const courseOptions = useMemo(
     () =>
-      Array.from(new Set(rooms.map((room) => room.course.trim()).filter(Boolean))).sort(
+      Array.from(new Set(rooms.filter((room) => !room.isArchived).map((room) => room.course.trim()).filter(Boolean))).sort(
         (a, b) => a.localeCompare(b),
       ),
     [rooms],
@@ -49,7 +49,8 @@ export default function RoomsPage() {
       search.trim() === "" ||
       r.name.toLowerCase().includes(search.toLowerCase()) ||
       r.description.toLowerCase().includes(search.toLowerCase());
-    return matchesCourse && matchesSearch;
+    const isNotArchived = !r.isArchived;
+    return matchesCourse && matchesSearch && isNotArchived;
   });
 
   const hour = new Date().getHours();
