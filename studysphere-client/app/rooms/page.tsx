@@ -7,6 +7,7 @@ import RoomCard from "../components/RoomCard";
 import CreateRoomModal from "../components/CreateRoomModal";
 import { useRooms } from "../hooks/useRoom";
 import { useRouter } from "next/navigation";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 export default function RoomsPage() {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
@@ -21,9 +22,14 @@ export default function RoomsPage() {
 
   const courseOptions = useMemo(
     () =>
-      Array.from(new Set(rooms.filter((room) => !room.isArchived).map((room) => room.course.trim()).filter(Boolean))).sort(
-        (a, b) => a.localeCompare(b),
-      ),
+      Array.from(
+        new Set(
+          rooms
+            .filter((room) => !room.isArchived)
+            .map((room) => room.course.trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
     [rooms],
   );
 
@@ -35,7 +41,9 @@ export default function RoomsPage() {
     [courseOptions, courseFilterSearch],
   );
 
-  const activeCourses = selectedCourses.filter((course) => courseOptions.includes(course));
+  const activeCourses = selectedCourses.filter((course) =>
+    courseOptions.includes(course),
+  );
   const courseFilterLabel =
     activeCourses.length === 0
       ? "All courses"
@@ -44,7 +52,8 @@ export default function RoomsPage() {
         : `${activeCourses.length} courses selected`;
 
   const filtered = rooms.filter((r) => {
-    const matchesCourse = activeCourses.length === 0 || activeCourses.includes(r.course);
+    const matchesCourse =
+      activeCourses.length === 0 || activeCourses.includes(r.course);
     const matchesSearch =
       search.trim() === "" ||
       r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -57,9 +66,14 @@ export default function RoomsPage() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  function handleJoinRoom(room: { _id: string; isPrivate: boolean }, inviteCode?: string) {
+  function handleJoinRoom(
+    room: { _id: string; isPrivate: boolean },
+    inviteCode?: string,
+  ) {
     if (room.isPrivate && inviteCode) {
-      router.push(`/room/${room._id}?inviteCode=${encodeURIComponent(inviteCode)}`);
+      router.push(
+        `/room/${room._id}?inviteCode=${encodeURIComponent(inviteCode)}`,
+      );
     } else if (!room.isPrivate) {
       router.push(`/room/${room._id}`);
     }
@@ -75,7 +89,9 @@ export default function RoomsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {showCreateModal && <CreateRoomModal onClose={() => setShowCreateModal(false)} />}
+      {showCreateModal && (
+        <CreateRoomModal onClose={() => setShowCreateModal(false)} />
+      )}
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-6 py-10">
@@ -112,11 +128,9 @@ export default function RoomsPage() {
             >
               Filter by course
             </label>
-            <div
-              className="flex w-full items-center justify-between gap-2 bg-surface-card border border-border rounded-lg px-4 py-2.5 text-left text-sm font-medium text-espresso outline-none focus:border-caramel transition-colors flex-wrap"
-            >
+            <div className="flex w-full items-center justify-between gap-2 bg-surface-card border border-border rounded-lg px-4 py-2.5 text-left text-sm font-medium text-espresso outline-none focus:border-caramel transition-colors flex-wrap">
               <div className="flex flex-wrap gap-2 items-center flex-1">
-                {activeCourses.length > 0 && (
+                {activeCourses.length > 0 &&
                   activeCourses.map((course) => (
                     <div
                       key={course}
@@ -142,8 +156,7 @@ export default function RoomsPage() {
                         ✕
                       </div>
                     </div>
-                  ))
-                )}
+                  ))}
                 <input
                   type="text"
                   value={courseFilterSearch}
@@ -166,7 +179,11 @@ export default function RoomsPage() {
                 }}
                 className="shrink-0 text-espresso-muted hover:text-espresso transition-colors cursor-pointer"
               >
-                {isCourseFilterOpen ? "^" : "v"}
+                {isCourseFilterOpen ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
               </button>
             </div>
 
@@ -180,10 +197,11 @@ export default function RoomsPage() {
                     setSelectedCourses([]);
                     setCourseFilterSearch("");
                   }}
-                  className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors cursor-pointer ${activeCourses.length === 0
+                  className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors cursor-pointer ${
+                    activeCourses.length === 0
                       ? "bg-espresso text-white"
                       : "text-espresso hover:bg-background"
-                    }`}
+                  }`}
                 >
                   All courses
                 </button>
