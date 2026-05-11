@@ -8,6 +8,8 @@ interface NavbarProps {
   roomSubtitle?: string;
 }
 
+import { Coffee } from "lucide-react";
+
 export default function Navbar({
   backHref,
   roomName,
@@ -45,7 +47,9 @@ export default function Navbar({
           </div>
         ) : (
           <Link href="/" className="flex items-center gap-1.5 select-none">
-            <span className="text-xl">☕</span>
+            <span>
+              <Coffee className="w-6 h-6 text-caramel" />
+            </span>
             <span className="font-bold text-espresso text-lg tracking-tight">
               Study
             </span>

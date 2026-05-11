@@ -6,6 +6,7 @@ import { firebaseCreateUserWithEmailAndPassword } from "../firebase/firebaseMeth
 import { signupSchema } from "../validation/authSchema";
 import { useRouter } from "next/navigation";
 import useAuthStore from "../stores/authStore";
+import { Coffee } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -48,7 +49,9 @@ export default function SignupPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-1.5 mb-8">
-          <span className="text-2xl">☕</span>
+          <span className="text-2xl">
+            <Coffee className="w-6 h-6 text-caramel" />
+          </span>
           <span className="font-bold text-espresso text-xl tracking-tight">
             Study
           </span>

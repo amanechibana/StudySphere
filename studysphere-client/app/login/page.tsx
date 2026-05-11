@@ -10,6 +10,7 @@ import {
 } from "../firebase/firebaseMethods";
 import { useRouter } from "next/navigation";
 import SocialSignIn from "../components/SocialSignIn";
+import { Coffee } from "lucide-react";
 
 export default function LoginPage() {
   const { user, initialized } = useAuthStore();
@@ -59,7 +60,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex items-center justify-center gap-1.5 mb-8">
-          <span className="text-2xl">☕</span>
+          <span className="text-2xl">
+            <Coffee className="w-6 h-6 text-caramel" />
+          </span>
           <span className="font-bold text-espresso text-xl tracking-tight">
             Study
           </span>
