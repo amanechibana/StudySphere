@@ -35,6 +35,7 @@ import {
   cancelRoomArchive,
   isRoomArchived,
   scheduleRoomArchive,
+  updateRoomArchiveStatus
 } from "../helpers.js";
 
 const router = Router();

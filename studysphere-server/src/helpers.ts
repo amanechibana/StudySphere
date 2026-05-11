@@ -6,7 +6,7 @@ import { getAllMessagesByRoomId } from "./data/messages.js";
 import { summarizeConversation } from "./services/aiSummarizer.js";
 import type { AIMessage } from "./types/ai.interface.js";
 
-const ARCHIVE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
+const ARCHIVE_THRESHOLD_MS = 1 * 10 * 1000; // 1 hour
 const scheduledRoomArchives = new Map<string, ReturnType<typeof setTimeout>>();
 
 /**
