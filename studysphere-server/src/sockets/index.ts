@@ -17,7 +17,12 @@ import type {
   ReceiveStrokeData,
   SendStrokeData,
 } from "../types/stroke.interface.js";
-import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
+import {
+  archiveRoomIfStillInactive,
+  cancelRoomArchive,
+  isRoomArchived,
+  scheduleRoomArchive,
+} from "../helpers.js";
 import {
   joinRoomSchema,
   sendMessageSchema,
@@ -40,6 +45,10 @@ import {
   type VoiceAnswerPayload,
   type VoiceIcePayload,
 } from "../schema/socket.js";
+import {
+  invalidateMessageCache,
+  invalidateStrokeCache,
+} from "../middleware/cache.js";
 
 const socketToRoom = new Map<string, string>();
 
@@ -110,8 +119,7 @@ export const initSockets = (io: Server) => {
         console.log("Room is not active");
         return;
       }
-      await updateRoomArchiveStatus(roomId);
-      const updatedRoom = await getRoomById(roomId);
+      const updatedRoom = await archiveRoomIfStillInactive(roomId);
       if (updatedRoom && isRoomArchived(updatedRoom as any)) {
         console.log("Room is archived");
         socket.emit("join_room_error", {
@@ -132,7 +140,10 @@ export const initSockets = (io: Server) => {
         socket.leave(currentRoom);
         console.log(`User ${socket.id} left ${currentRoom}`);
         // removes user from room in database
-        await leaveRoom(currentRoom, userId);
+        const leftCurrentRoom = await leaveRoom(currentRoom, userId);
+        if (leftCurrentRoom?.members.length === 0) {
+          scheduleRoomArchive(currentRoom, leftCurrentRoom.lastUserLeftAt);
+        }
 
         // notify users that the user left the room
         socket.to(currentRoom).emit("user_left", {
@@ -174,6 +185,7 @@ export const initSockets = (io: Server) => {
       // join room and update mapping
       socket.join(roomId);
       socketToRoom.set(socket.id, roomId);
+      cancelRoomArchive(roomId);
 
       // notify users that the user joined the room (including the joiner
       // so their client can refresh the member list)
@@ -217,6 +229,7 @@ export const initSockets = (io: Server) => {
         return;
       }
       const result = await addStrokeToRoom(roomId, stroke);
+      await invalidateStrokeCache(roomId);
       if (!result) {
         console.log("Failed to add stroke to room");
         return;
@@ -237,6 +250,7 @@ export const initSockets = (io: Server) => {
       const userId = socket.data.userId;
       if (!roomId || !userId) return;
       const undoResult = await undoStrokeToRoom(roomId, userId);
+      await invalidateStrokeCache(roomId);
       if (!undoResult) {
         console.log("Failed to undo stroke");
         return;
@@ -301,6 +315,8 @@ export const initSockets = (io: Server) => {
         createdAt: now,
         updatedAt: now,
       });
+
+      await invalidateMessageCache(roomId);
 
       io.to(roomId).emit("receive_message", {
         message,
@@ -438,7 +454,12 @@ export const initSockets = (io: Server) => {
         socketToRoom.delete(socket.id);
 
         // removes user from room in database
-        await leaveRoom(roomId, userId);
+        const leftRoom = await leaveRoom(roomId, userId);
+
+        // if room is now empty, schedule archive callback
+        if (leftRoom && leftRoom.members && leftRoom.members.length === 0) {
+          scheduleRoomArchive(roomId, leftRoom.lastUserLeftAt);
+        }
 
         // notify users that the user left the room
         const message = `${user.username} left the room`;

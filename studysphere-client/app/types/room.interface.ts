@@ -12,4 +12,6 @@ export interface Room {
 	
 	members: string[],
 	createdAt: Date,
+	isArchived: boolean,
+	summary?: string,
 }

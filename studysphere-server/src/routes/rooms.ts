@@ -30,7 +30,12 @@ import {
   type ListMessagesQuery,
 } from "../schema/message.js";
 import { requireAuth } from "../middleware/auth.js";
-import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
+import { cacheMessages, invalidateMessageCache } from "../middleware/cache.js";
+import {
+  cancelRoomArchive,
+  isRoomArchived,
+  scheduleRoomArchive,
+} from "../helpers.js";
 
 const router = Router();
 
@@ -46,6 +51,84 @@ router.get("/", requireAuth, async (_req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch rooms" });
   }
 });
+
+// GET /archived, list all archived rooms
+router.get("/archived", requireAuth, async (_req: Request, res: Response) => {
+  console.log("GET /rooms/archived");
+  try {
+    const allRooms = await getRooms();
+    const archivedRooms = allRooms.filter((room) => room.isArchived);
+    res.status(200).json(archivedRooms);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch archived rooms" });
+  }
+});
+
+// GET /archived/:id, get specific archived room with summary
+router.get(
+  "/archived/:id",
+  validateParams(roomParamsSchema),
+  requireAuth,
+  async (req: Request<{ id: string }>, res: Response) => {
+    console.log(`GET /rooms/archived/${req.params.id}`);
+    try {
+      const room = await getRoomById(req.params.id);
+      if (!room || !room.isArchived) {
+        return res.status(404).json({ error: "Archived room not found" });
+      }
+      const userId = req.user?._id;
+      if (!userId || !room.pastMembers?.includes(userId)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      res.status(200).json(room);
+    } catch (err) {
+      console.error(err);
+      res.status(400).json({ error: "Invalid room ID" });
+    }
+  },
+);
+
+// GET /archived/:id/messages — full chat log for an archived room
+router.get(
+  "/archived/:id/messages",
+  validateParams(roomParamsSchema),
+  requireAuth,
+  async (req: Request<{ id: string }>, res: Response) => {
+    console.log(`GET /rooms/archived/${req.params.id}/messages`);
+    try {
+      const room = await getRoomById(req.params.id);
+      if (!room || !room.isArchived) {
+        return res.status(404).json({ error: "Archived room not found" });
+      }
+      const userId = req.user?._id;
+      if (!userId || !room.pastMembers?.includes(userId)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { getAllMessagesByRoomId } = await import("../data/messages.js");
+      const docs = await getAllMessagesByRoomId(req.params.id);
+
+      const uniqueSenderIds = [...new Set(docs.map((m) => m.senderId))];
+      const userDocs = await Promise.all(uniqueSenderIds.map((id) => getUserById(id)));
+      const userMap = new Map(userDocs.filter(Boolean).map((u) => [u!._id, u!.username]));
+
+      const messages = docs.map((m) => ({
+        message: m.body,
+        user: {
+          _id: m.senderId,
+          username: userMap.get(m.senderId) ?? "Unknown",
+        },
+        timestamp: m.createdAt.toISOString(),
+      }));
+
+      res.status(200).json(messages);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  },
+);
 
 // GET /:id
 router.get(
@@ -94,6 +177,7 @@ router.post(
         capacity: capacity || 0,
         strokes: [],
         members: [],
+        pastMembers: [],
         createdAt: new Date(),
         isArchived: false,
       };
@@ -194,12 +278,14 @@ router.post(
         if (!joinedRoom) {
           return res.status(404).json({ error: "Failed to join room" });
         }
+        cancelRoomArchive(roomId);
         res.status(200).json(joinedRoom);
       } else {
         const joinedRoom = await joinPublicRoom(roomId, userId);
         if (!joinedRoom) {
           return res.status(404).json({ error: "Failed to join room" });
         }
+        cancelRoomArchive(roomId);
         res.status(200).json(joinedRoom);
       }
     } catch (err) {
@@ -227,6 +313,9 @@ router.post(
       if (!leftRoom) {
         return res.status(404).json({ error: "Failed to leave room" });
       }
+      if (leftRoom.members.length === 0) {
+        scheduleRoomArchive(roomId, leftRoom.lastUserLeftAt);
+      }
       res.json(leftRoom);
     } catch (err) {
       console.error(err);
@@ -241,11 +330,13 @@ router.get(
   validateParams(roomParamsSchema),
   validateQuery(listMessagesQuerySchema),
   requireAuth,
+  cacheMessages,
   async (
     req: Request<{ id: string }, unknown, unknown, ListMessagesQuery>,
     res: Response,
   ) => {
     console.log(`GET /rooms/${req.params.id}/messages`);
+    //await new Promise((resolve) => setTimeout(resolve, 5000));
     try {
       const { before, limit } = req.query;
       const { messages: docs, hasMore } = await getMessagesByRoomId(
@@ -300,6 +391,8 @@ router.post(
       };
 
       const createdMessage = await createMessage(newMessage);
+
+      await invalidateMessageCache(req.params.id);
 
       res.status(201).json(createdMessage);
     } catch (err) {
