@@ -1,5 +1,6 @@
 import Link from "next/link";
 import useAuthStore from "../stores/authStore";
+import { ArrowLeft } from "lucide-react";
 
 interface NavbarProps {
   backHref?: string;
@@ -27,7 +28,10 @@ export default function Navbar({
             href={backHref}
             className="border border-border rounded-lg px-3 py-1.5 text-sm text-espresso hover:bg-border/40 transition-colors"
           >
-            ← Back
+            <div className="flex items-center gap-1.5">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </div>
           </Link>
         )}
         {roomName ? (

@@ -7,7 +7,7 @@ import RoomCard from "../components/RoomCard";
 import CreateRoomModal from "../components/CreateRoomModal";
 import { useRooms } from "../hooks/useRoom";
 import { useRouter } from "next/navigation";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Plus } from "lucide-react";
 
 export default function RoomsPage() {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
@@ -117,7 +117,9 @@ export default function RoomsPage() {
               onClick={() => setShowCreateModal(true)}
               className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
             >
-              + Create room
+              <div className="flex items-center gap-1">
+                <Plus className="w-4 h-4" /> Create room
+              </div>
             </button>
           </div>
 
