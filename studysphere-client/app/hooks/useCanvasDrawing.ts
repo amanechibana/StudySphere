@@ -1,17 +1,18 @@
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
+import type { Point, Stroke, StrokeTool } from "../types/stroke.interface";
 
-export type Point = { x: number; y: number };
-export type StrokeTool = "pen" | "eraser";
-
-export type Stroke = {
-  type: StrokeTool;
-  color: string;
-  width: number;
-  points: Point[];
-};
+export type { Point, StrokeTool, Stroke } from "../types/stroke.interface";
 
 const MIN_DISTANCE = 4;
+
+function removeLastOwn(strokes: Stroke[], userId: string | undefined): Stroke[] {
+  if (!userId) return strokes;
+  const idx = [...strokes].reverse().findIndex((s) => s.userId === userId);
+  if (idx === -1) return strokes;
+  const target = strokes.length - 1 - idx;
+  return strokes.filter((_, i) => i !== target);
+}
 
 function dist(a: Point, b: Point) {
   return Math.hypot(b.x - a.x, b.y - a.y);
@@ -55,7 +56,9 @@ function redraw(
 export function useCanvasDrawing(
   strokes: Stroke[],
   setStrokes: Dispatch<SetStateAction<Stroke[]>>,
-  onCommit?: (stroke: Stroke) => void
+  userId: string | undefined,
+  onCommit?: (stroke: Stroke) => void,
+  onUndo?: () => void
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tool, setTool] = useState<StrokeTool>("pen");
@@ -93,12 +96,13 @@ export function useCanvasDrawing(
     function onKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "z") {
         e.preventDefault();
-        setStrokes((prev) => prev.slice(0, -1));
+        setStrokes((prev) => removeLastOwn(prev, userId));
+        onUndo?.();
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [setStrokes]);
+  }, [setStrokes, onUndo]);
 
   function getPoint(e: PointerEvent<HTMLCanvasElement>): Point {
     const canvas = e.currentTarget;
@@ -119,6 +123,8 @@ export function useCanvasDrawing(
       color,
       width,
       points: [getPoint(e)],
+      userId: userId ?? "",
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -151,7 +157,10 @@ export function useCanvasDrawing(
     onPointerMove,
     onPointerUp: commitStroke,
     onPointerLeave: commitStroke,
-    undo: () => setStrokes((prev) => prev.slice(0, -1)),
-    canUndo: strokes.length > 0,
+    undo: () => {
+      setStrokes((prev) => removeLastOwn(prev, userId));
+      onUndo?.();
+    },
+    canUndo: strokes.some((s) => s.userId === userId),
   };
 }

@@ -10,7 +10,7 @@ import useSocketStore from "../../stores/socketStore";
 import { useChat } from "../../hooks/useChat";
 import { useSocketRoom } from "../../hooks/useSocketRoom";
 import { useRoom } from "../../hooks/useRoom";
-import { type Stroke } from "../../hooks/useCanvasDrawing";
+import type { Stroke } from "../../types/stroke.interface";
 import { useCanvasSync } from "../../hooks/useCanvasSync";
 import { useVoiceChat, type VoiceMember } from "../../hooks/useVoiceChat";
 import RoomChat from "./RoomChat";
@@ -281,7 +281,7 @@ export default function RoomPage({
 
   const { joinError } = useSocketRoom(id, inviteCode);
   const { messages, sendMessage, hasMore, loadMore, loadingMore } = useChat(id);
-  const { sendStroke } = useCanvasSync(id, user?._id, setStrokes);
+  const { sendStroke, sendUndo } = useCanvasSync(id, user?._id, setStrokes);
   const voice = useVoiceChat(id, user?._id);
 
   useEffect(() => {
@@ -395,7 +395,9 @@ export default function RoomPage({
               <RoomCanvas
                 strokes={strokes}
                 setStrokes={setStrokes}
+                userId={user?._id}
                 onCommit={sendStroke}
+                onUndo={sendUndo}
               />
             </div>
             <div className="w-52 shrink-0 flex flex-col gap-4 min-h-0 overflow-y-auto">
