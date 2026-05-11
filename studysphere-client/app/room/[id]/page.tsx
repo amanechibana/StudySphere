@@ -323,7 +323,6 @@ export default function RoomPage({
             Back to home
           </button>
         </div>
-        <p className="font-serif italic text-red-500 text-lg">{joinError}</p>
       </div>
     );
   }
