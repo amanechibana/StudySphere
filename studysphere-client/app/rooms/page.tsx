@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import useUserStore from "../stores/userStore";
 import RoomCard from "../components/RoomCard";
@@ -8,17 +8,9 @@ import CreateRoomModal from "../components/CreateRoomModal";
 import { useRooms } from "../hooks/useRoom";
 import { useRouter } from "next/navigation";
 
-const COURSES = [
-  "All",
-  "CS 401",
-  "MATH 301",
-  "BIO 210",
-  "PHYS 202",
-  "CHEM 110",
-];
-
 export default function RoomsPage() {
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [isCourseFilterOpen, setIsCourseFilterOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -26,8 +18,24 @@ export default function RoomsPage() {
   const { data: rooms = [] } = useRooms();
   const router = useRouter();
 
+  const courseOptions = useMemo(
+    () =>
+      Array.from(new Set(rooms.map((room) => room.course.trim()).filter(Boolean))).sort(
+        (a, b) => a.localeCompare(b),
+      ),
+    [rooms],
+  );
+
+  const activeCourses = selectedCourses.filter((course) => courseOptions.includes(course));
+  const courseFilterLabel =
+    activeCourses.length === 0
+      ? "All courses"
+      : activeCourses.length === 1
+        ? activeCourses[0]
+        : `${activeCourses.length} courses selected`;
+
   const filtered = rooms.filter((r) => {
-    const matchesCourse = activeFilter === "All" || r.course === activeFilter;
+    const matchesCourse = activeCourses.length === 0 || activeCourses.includes(r.course);
     const matchesSearch =
       search.trim() === "" ||
       r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -45,6 +53,14 @@ export default function RoomsPage() {
     } else if (!room.isPrivate) {
       router.push(`/room/${room._id}`);
     }
+  }
+
+  function toggleCourse(course: string) {
+    setSelectedCourses((current) =>
+      current.includes(course)
+        ? current.filter((selected) => selected !== course)
+        : [...current, course],
+    );
   }
 
   return (
@@ -79,25 +95,68 @@ export default function RoomsPage() {
             </button>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-2">
+          <div className="relative max-w-xs">
+            <label
+              htmlFor="course-filter"
+              className="block text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-2"
+            >
               Filter by course
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {COURSES.map((course) => (
+            </label>
+            <button
+              id="course-filter"
+              onClick={() => setIsCourseFilterOpen((open) => !open)}
+              className="flex w-full items-center justify-between gap-3 bg-surface-card border border-border rounded-lg px-4 py-2.5 text-left text-sm font-medium text-espresso outline-none focus:border-caramel transition-colors cursor-pointer"
+            >
+              <span className="truncate">{courseFilterLabel}</span>
+              <span aria-hidden="true" className="text-espresso-muted">
+                {isCourseFilterOpen ? "^" : "v"}
+              </span>
+            </button>
+
+            {isCourseFilterOpen && (
+              <div
+                className="absolute z-10 mt-2 flex w-full flex-col overflow-hidden rounded-lg border border-border bg-surface-card p-2 shadow-lg"
+                style={{ maxHeight: "min(24rem, calc(100vh - 16rem))" }}
+              >
                 <button
-                  key={course}
-                  onClick={() => setActiveFilter(course)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
-                    activeFilter === course
-                      ? "bg-espresso text-white border-espresso"
-                      : "bg-transparent text-espresso border-border hover:border-espresso-muted"
+                  onClick={() => setSelectedCourses([])}
+                  className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors cursor-pointer ${
+                    activeCourses.length === 0
+                      ? "bg-espresso text-white"
+                      : "text-espresso hover:bg-background"
                   }`}
                 >
-                  {course}
+                  All courses
                 </button>
-              ))}
-            </div>
+                <div className="my-2 border-t border-border" />
+                <div className="min-h-0 overflow-y-auto">
+                  {courseOptions.length > 0 ? (
+                    courseOptions.map((course) => {
+                      const isSelected = activeCourses.includes(course);
+
+                      return (
+                        <label
+                          key={course}
+                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-espresso hover:bg-background cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleCourse(course)}
+                            className="h-4 w-4 accent-espresso"
+                          />
+                          <span className="truncate">{course}</span>
+                        </label>
+                      );
+                    })
+                  ) : (
+                    <p className="px-3 py-2 text-sm italic text-espresso-muted">
+                      No courses available.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

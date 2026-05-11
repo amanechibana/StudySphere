@@ -8,8 +8,9 @@
   "main": "dist/app.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "tsx watch --env-file=.env src/app.ts",
     "dev": "tsx watch --env-file=.env src/app.ts",
+    "seed": "tsx src/seeds/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
