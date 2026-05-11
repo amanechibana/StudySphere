@@ -13,6 +13,5 @@ export interface User {
   username: string;
   email: string | null;
   displayName: string | null;
-  bio: string | null;
   createdAt: Date;
 }

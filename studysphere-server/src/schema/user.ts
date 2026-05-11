@@ -33,7 +33,6 @@ export const updateUserBodySchema = z
       .optional(),
     email: z.string().trim().email().optional(),
     displayName: z.union([z.string().trim().max(50), z.null()]).optional(),
-    bio: z.union([z.string().trim().max(500), z.null()]).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "No valid fields provided for update",
@@ -44,7 +43,6 @@ export const userDocumentSchema = z.strictObject({
   username: z.string().max(100),
   email: z.union([z.string().email(), z.null()]),
   displayName: z.union([z.string().max(50), z.null()]),
-  bio: z.union([z.string().max(500), z.null()]),
   createdAt: z.coerce.date(),
 });
 

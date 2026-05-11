@@ -6,7 +6,6 @@ export interface User {
   username: string;
   email: string | null;
   displayName: string | null;
-  bio: string | null;
   createdAt: Date;
 }
 
@@ -20,7 +19,6 @@ export interface UpdateProfileRequest {
   username?: string;
   email?: string;
   displayName?: string | null;
-  bio?: string | null;
 }
 
 export const userApi = {

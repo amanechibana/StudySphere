@@ -113,7 +113,6 @@ router.post(
         username,
         email: email ?? null,
         displayName: null,
-        bio: null,
         createdAt: new Date(),
       };
 
