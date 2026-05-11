@@ -233,8 +233,9 @@ export const initSockets = (io: Server) => {
     // undo stroke
     socket.on("undo_stroke", async () => {
       const roomId = socketToRoom.get(socket.id);
-      if (!roomId) return;
-      const undoResult = await undoStrokeToRoom(roomId);
+      const userId = socket.data.userId;
+      if (!roomId || !userId) return;
+      const undoResult = await undoStrokeToRoom(roomId, userId);
       if (!undoResult) {
         console.log("Failed to undo stroke");
         return;

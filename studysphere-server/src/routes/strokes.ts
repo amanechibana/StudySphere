@@ -83,7 +83,11 @@ router.post(
     console.log(`POST /strokes/:id/undo`);
     try {
       const roomId = req.params.id;
-      const undoResult = await undoStrokeToRoom(roomId);
+      const userId = req.user?._id;
+      if (!userId) {
+        return res.status(401).json({ error: "User not found" });
+      }
+      const undoResult = await undoStrokeToRoom(roomId, userId);
       if (!undoResult) {
         return res.status(404).json({ error: "Failed to undo stroke" });
       }

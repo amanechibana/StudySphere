@@ -129,7 +129,10 @@ async function addStrokeToRoom(
   return result ?? null;
 }
 
-async function undoStrokeToRoom(id: RoomId): Promise<UndoStrokeResult | null> {
+async function undoStrokeToRoom(
+  id: RoomId,
+  userId: UserId,
+): Promise<UndoStrokeResult | null> {
   const roomsCollection = await rooms();
   const roomId = new ObjectId(id);
 
@@ -139,7 +142,13 @@ async function undoStrokeToRoom(id: RoomId): Promise<UndoStrokeResult | null> {
     return null;
   }
 
-  const latestStroke = room.strokes.reduce((latest, current) => {
+  const userStrokes = room.strokes.filter((s: Stroke) => s.userId === userId);
+  if (userStrokes.length === 0) {
+    console.log("User has no strokes to undo");
+    return null;
+  }
+
+  const latestStroke = userStrokes.reduce((latest, current) => {
     return new Date(current.timestamp) > new Date(latest.timestamp)
       ? current
       : latest;
