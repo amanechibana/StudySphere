@@ -12,7 +12,7 @@ import {
 import { getUserById } from "../data/users.js";
 import { createMessage } from "../data/messages.js";
 import { socketAuthMiddleware } from "../middleware/auth.js";
-import { addStrokeToRoom } from "../data/rooms.js";
+import { addStrokeToRoom, undoStrokeToRoom } from "../data/rooms.js";
 import type {
   ReceiveStrokeData,
   SendStrokeData,
@@ -175,8 +175,9 @@ export const initSockets = (io: Server) => {
       socket.join(roomId);
       socketToRoom.set(socket.id, roomId);
 
-      // notify users that the user joined the room
-      socket.to(roomId).emit("user_joined", {
+      // notify users that the user joined the room (including the joiner
+      // so their client can refresh the member list)
+      io.to(roomId).emit("user_joined", {
         message: `${user.username} joined the room`,
         user: {
           _id: user._id,
@@ -189,108 +190,127 @@ export const initSockets = (io: Server) => {
     });
 
     // send stroke
-    socket.on(
-      "send_stroke",
-      async (payload: SendStrokePayload) => {
-        const parsed = sendStrokeSchema.safeParse(payload);
-        if (!parsed.success) {
-          console.log("Invalid payload");
-          return;
-        }
-        const { roomId, stroke } = parsed.data;
-        const userId = socket.data.userId;
-        if (!userId) {
-          console.log("Could not fetch user ID");
-          return;
-        }
-        const user = await getUserById(userId);
-        const room = await getRoomById(roomId);
-        if (!user || !room) {
-          console.log("Invalid user or room");
-          return;
-        }
-        if (room.isActive === false) {
-          console.log("Room is not active");
-          return;
-        }
-        if (!room.members.some((m) => m === userId)) {
-          console.log("User is not in room");
-          return;
-        }
-        const result = await addStrokeToRoom(roomId, stroke);
-        if (!result) {
-          console.log("Failed to add stroke to room");
-          return;
-        }
-        io.to(roomId).emit("receive_stroke", {
-          stroke,
-          user: {
-            _id: user._id,
-            username: user.username,
-          },
-          timestamp: new Date().toISOString(),
-        } as ReceiveStrokeData);
-      },
-    );
+    socket.on("send_stroke", async (payload: SendStrokePayload) => {
+      const parsed = sendStrokeSchema.safeParse(payload);
+      if (!parsed.success) {
+        console.log("Invalid payload");
+        return;
+      }
+      const { roomId, stroke } = parsed.data;
+      const userId = socket.data.userId;
+      if (!userId) {
+        console.log("Could not fetch user ID");
+        return;
+      }
+      const user = await getUserById(userId);
+      const room = await getRoomById(roomId);
+      if (!user || !room) {
+        console.log("Invalid user or room");
+        return;
+      }
+      if (room.isActive === false) {
+        console.log("Room is not active");
+        return;
+      }
+      if (!room.members.some((m) => m === userId)) {
+        console.log("User is not in room");
+        return;
+      }
+      const result = await addStrokeToRoom(roomId, stroke);
+      if (!result) {
+        console.log("Failed to add stroke to room");
+        return;
+      }
+      io.to(roomId).emit("receive_stroke", {
+        stroke,
+        user: {
+          _id: user._id,
+          username: user.username,
+        },
+        timestamp: new Date().toISOString(),
+      } as ReceiveStrokeData);
+    });
+
+    // undo stroke
+    socket.on("undo_stroke", async () => {
+      const roomId = socketToRoom.get(socket.id);
+      const userId = socket.data.userId;
+      if (!roomId || !userId) return;
+      const undoResult = await undoStrokeToRoom(roomId, userId);
+      if (!undoResult) {
+        console.log("Failed to undo stroke");
+        return;
+      }
+      const { room, removedStroke } = undoResult;
+      if (!room) {
+        console.log("Failed to undo stroke");
+        return;
+      }
+      io.to(roomId).emit("undo_stroke", {
+        stroke: removedStroke,
+        user: {
+          _id: socket.data.userId,
+          username: socket.data.username,
+        },
+        timestamp: new Date().toISOString(),
+      } as ReceiveStrokeData);
+    });
 
     // send message
-    socket.on(
-      "send_message",
-      async (payload: SendMessagePayload) => {
-        const parsed = sendMessageSchema.safeParse(payload);
-        if (!parsed.success) {
-          console.log("Invalid payload");
-          return;
-        }
-        const { roomId, message } = parsed.data;
-        const userId = socket.data.userId;
-        if (!userId) {
-          console.log("Could not fetch user ID");
-          return;
-        }
+    socket.on("send_message", async (payload: SendMessagePayload) => {
+      const parsed = sendMessageSchema.safeParse(payload);
+      if (!parsed.success) {
+        console.log("Invalid payload");
+        return;
+      }
+      const { roomId, message } = parsed.data;
+      const userId = socket.data.userId;
+      if (!userId) {
+        console.log("Could not fetch user ID");
+        return;
+      }
 
-        // ensure user exists
-        const user = await getUserById(userId);
-        const room = await getRoomById(roomId);
-        if (!user) {
-          console.log("Invalid user");
-          return;
-        }
-        // ensure room exists and is active
-        if (!room) {
-          console.log("Invalid room");
-          return;
-        }
-        if (room.isActive === false) {
-          console.log("Room is not active");
-          return;
-        }
+      // ensure user exists
+      const user = await getUserById(userId);
+      const room = await getRoomById(roomId);
+      if (!user) {
+        console.log("Invalid user");
+        return;
+      }
+      // ensure room exists and is active
+      if (!room) {
+        console.log("Invalid room");
+        return;
+      }
+      if (room.isActive === false) {
+        console.log("Room is not active");
+        return;
+      }
 
-        // ensure user is in room in the database
-        if (!room.members.some((m) => m === userId)) {
-          console.log("User is not in room");
-          return;
-        }
+      // ensure user is in room in the database
+      if (!room.members.some((m) => m === userId)) {
+        console.log("User is not in room");
+        return;
+      }
 
-        const now = new Date();
-        await createMessage({
-          roomId,
-          senderId: userId,
-          body: message,
-          createdAt: now,
-          updatedAt: now,
-        });
+      const now = new Date();
+      await createMessage({
+        roomId,
+        senderId: userId,
+        body: message,
+        createdAt: now,
+        updatedAt: now,
+      });
 
-        io.to(roomId).emit("receive_message", {
-          message,
-          user: {
-            _id: user._id,
-            username: user.username,
-          },
-          timestamp: now.toISOString(),
-        } as ReceiveMessageData);
-      },
-    );
+      io.to(roomId).emit("receive_message", {
+        message,
+        user: {
+          _id: user._id,
+          username: user.username,
+        },
+        timestamp: now.toISOString(),
+      } as ReceiveMessageData);
+    });
 
     // voice: join
     socket.on("voice_join", async (payload: VoiceJoinPayload) => {
@@ -305,7 +325,8 @@ export const initSockets = (io: Server) => {
       if (!user || !room || room.isActive === false) return;
       if (!room.members.some((m) => m === userId)) return;
 
-      const members = roomVoiceMembers.get(roomId) ?? new Map<string, VoiceMember>();
+      const members =
+        roomVoiceMembers.get(roomId) ?? new Map<string, VoiceMember>();
       members.set(userId, {
         userId,
         username: user.username,
@@ -367,7 +388,9 @@ export const initSockets = (io: Server) => {
       const fromUserId = socket.data.userId;
       if (!fromUserId) return;
       const sender = roomVoiceMembers.get(payload.roomId)?.get(fromUserId);
-      const target = roomVoiceMembers.get(payload.roomId)?.get(payload.toUserId);
+      const target = roomVoiceMembers
+        .get(payload.roomId)
+        ?.get(payload.toUserId);
       if (!sender || !target) return;
       io.to(target.socketId).emit(eventName, { fromUserId, ...data });
     }
@@ -387,7 +410,9 @@ export const initSockets = (io: Server) => {
     socket.on("voice_ice", (payload: VoiceIcePayload) => {
       const parsed = voiceIceSchema.safeParse(payload);
       if (!parsed.success) return;
-      relaySignal("voice_ice", parsed.data, { candidate: parsed.data.candidate });
+      relaySignal("voice_ice", parsed.data, {
+        candidate: parsed.data.candidate,
+      });
     });
 
     // disconnect

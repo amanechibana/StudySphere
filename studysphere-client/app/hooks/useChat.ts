@@ -9,7 +9,7 @@ export function useChat(roomId: string) {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   
-  // ref to oldest message
+  // ref to oldest message timestamp
   const cursorRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {

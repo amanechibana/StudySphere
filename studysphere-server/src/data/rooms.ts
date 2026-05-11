@@ -7,7 +7,7 @@ import {
 import { rooms } from "../config/mongoCollections.js";
 import type { RoomId, NewRoom } from "../types/room.interface.js";
 import type { UserId } from "../types/user.interface.js";
-import type { Stroke } from "../types/stroke.interface.js";
+import type { Stroke, UndoStrokeResult } from "../types/stroke.interface.js";
 
 async function getRooms() {
   const roomsCollection = await rooms();
@@ -104,7 +104,9 @@ async function leaveRoom(
   if (result && result.members && result.members.length === 0) {
     const updatedResult = await roomsCollection.findOneAndUpdate(
       { _id: roomId },
-      { $set: { lastUserLeftAt: new Date() } } as unknown as UpdateFilter<Document>,
+      {
+        $set: { lastUserLeftAt: new Date() },
+      } as unknown as UpdateFilter<Document>,
       { returnDocument: "after" },
     );
     return updatedResult ?? null;
@@ -127,6 +129,44 @@ async function addStrokeToRoom(
   return result ?? null;
 }
 
+async function undoStrokeToRoom(
+  id: RoomId,
+  userId: UserId,
+): Promise<UndoStrokeResult | null> {
+  const roomsCollection = await rooms();
+  const roomId = new ObjectId(id);
+
+  const room = await roomsCollection.findOne({ _id: roomId });
+  if (!room || !room.strokes || room.strokes.length === 0) {
+    console.log("No strokes to undo");
+    return null;
+  }
+
+  const userStrokes = room.strokes.filter((s: Stroke) => s.userId === userId);
+  if (userStrokes.length === 0) {
+    console.log("User has no strokes to undo");
+    return null;
+  }
+
+  const latestStroke = userStrokes.reduce((latest, current) => {
+    return new Date(current.timestamp) > new Date(latest.timestamp)
+      ? current
+      : latest;
+  });
+
+  const result = await roomsCollection.findOneAndUpdate(
+    { _id: roomId },
+    { $pull: { strokes: latestStroke } },
+    { returnDocument: "after" },
+  );
+  if (!result) {
+    console.log("Failed to undo stroke");
+    return null;
+  }
+
+  return { room: result, removedStroke: latestStroke };
+}
+
 export {
   getRoomById,
   createRoom,
@@ -137,4 +177,5 @@ export {
   joinPrivateRoom,
   leaveRoom,
   addStrokeToRoom,
+  undoStrokeToRoom,
 };

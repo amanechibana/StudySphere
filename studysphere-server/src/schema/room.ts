@@ -12,7 +12,7 @@ export const createRoomBodySchema = z
     ownerId: z.string().trim().min(1, "ownerId is required").max(100, "ownerId is too long"),
     private: z.boolean().optional(),
     isPrivate: z.boolean().optional().default(false),
-    capacity: z.number().int().positive().optional().default(6),
+    capacity: z.number().int().positive().max(10, "capacity cannot exceed 10").optional().default(6),
     members: z.array(z.string().trim().min(1)).optional().default([]),
   })
   .superRefine((data, ctx) => {
@@ -33,7 +33,7 @@ export const createRoomBodySchema = z
     ownerId: z.string().trim().min(1).max(100).optional(),
     inviteCode: z.string().trim().min(1).max(10).nullable().optional(),
     isPrivate: z.boolean().optional(),
-    capacity: z.number().int().positive().optional(),
+    capacity: z.number().int().positive().max(10, "capacity cannot exceed 10").optional(),
     members: z.array(z.string().trim().min(1).max(100)).optional(),
     createdAt: z.coerce.date().optional(),
     isArchived: z.boolean().optional(),

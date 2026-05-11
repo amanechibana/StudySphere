@@ -18,6 +18,7 @@ export const sendStrokeSchema = z.object({
     width: z.number(),
     points: z.array(z.object({ x: z.number(), y: z.number() })),
     timestamp: z.iso.datetime(),
+    userId: z.string(),
   }),
 });
 

@@ -20,11 +20,12 @@ import {
   type UserParams,
 } from "../schema/user.js";
 import type { ErrorResponse } from "../types/api.interface.ts";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
 // GET /
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", requireAuth, async (_req: Request, res: Response) => {
   console.log("GET /users");
   try {
     const allUsers = await getUsers();
@@ -84,6 +85,7 @@ router.patch(
 router.get(
   "/:id",
   validateParams(userIdParamsSchema),
+  requireAuth,
   async (req: Request<UserParams>, res: Response<User | ErrorResponse>) => {
     console.log(`GET /users/${req.params.id}`);
     try {
@@ -103,7 +105,10 @@ router.get(
 router.post(
   "/",
   validateBody(createUserBodySchema),
-  async (req: Request<ParamsDictionary, User | ErrorResponse, CreateUserBody>, res: Response<User | ErrorResponse>) => {
+  async (
+    req: Request<ParamsDictionary, User | ErrorResponse, CreateUserBody>,
+    res: Response<User | ErrorResponse>,
+  ) => {
     console.log("POST /users");
     try {
       const { firebaseUid, username, email } = req.body;
@@ -138,6 +143,7 @@ router.patch(
   "/:id",
   validateParams(userIdParamsSchema),
   validateBody(updateUserBodySchema),
+  requireAuth,
   async (
     req: Request<UserParams, User | ErrorResponse, UpdateUserBody>,
     res: Response<User | ErrorResponse>,
@@ -164,6 +170,7 @@ router.patch(
 router.delete(
   "/:id",
   validateParams(userIdParamsSchema),
+  requireAuth,
   async (req: Request<UserParams>, res: Response<ErrorResponse>) => {
     console.log(`DELETE /users/${req.params.id}`);
     try {

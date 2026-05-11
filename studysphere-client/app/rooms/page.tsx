@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import useUserStore from "../stores/userStore";
 import RoomCard from "../components/RoomCard";
@@ -8,26 +8,43 @@ import CreateRoomModal from "../components/CreateRoomModal";
 import { useRooms } from "../hooks/useRoom";
 import { useRouter } from "next/navigation";
 
-const COURSES = [
-  "All",
-  "CS 401",
-  "MATH 301",
-  "BIO 210",
-  "PHYS 202",
-  "CHEM 110",
-];
-
 export default function RoomsPage() {
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [isCourseFilterOpen, setIsCourseFilterOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [courseFilterSearch, setCourseFilterSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { user } = useUserStore();
   const { data: rooms = [] } = useRooms();
   const router = useRouter();
 
+  const courseOptions = useMemo(
+    () =>
+      Array.from(new Set(rooms.map((room) => room.course.trim()).filter(Boolean))).sort(
+        (a, b) => a.localeCompare(b),
+      ),
+    [rooms],
+  );
+
+  const filteredCourseOptions = useMemo(
+    () =>
+      courseOptions.filter((course) =>
+        course.toLowerCase().includes(courseFilterSearch.toLowerCase()),
+      ),
+    [courseOptions, courseFilterSearch],
+  );
+
+  const activeCourses = selectedCourses.filter((course) => courseOptions.includes(course));
+  const courseFilterLabel =
+    activeCourses.length === 0
+      ? "All courses"
+      : activeCourses.length === 1
+        ? activeCourses[0]
+        : `${activeCourses.length} courses selected`;
+
   const filtered = rooms.filter((r) => {
-    const matchesCourse = activeFilter === "All" || r.course === activeFilter;
+    const matchesCourse = activeCourses.length === 0 || activeCourses.includes(r.course);
     const matchesSearch =
       search.trim() === "" ||
       r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -45,6 +62,14 @@ export default function RoomsPage() {
     } else if (!room.isPrivate) {
       router.push(`/room/${room._id}`);
     }
+  }
+
+  function toggleCourse(course: string) {
+    setSelectedCourses((current) =>
+      current.includes(course)
+        ? current.filter((selected) => selected !== course)
+        : [...current, course],
+    );
   }
 
   return (
@@ -79,25 +104,117 @@ export default function RoomsPage() {
             </button>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-2">
+          <div className="relative max-w-xs">
+            <label
+              htmlFor="course-filter"
+              className="block text-xs font-semibold tracking-widest text-espresso-muted uppercase mb-2"
+            >
               Filter by course
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {COURSES.map((course) => (
-                <button
-                  key={course}
-                  onClick={() => setActiveFilter(course)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
-                    activeFilter === course
-                      ? "bg-espresso text-white border-espresso"
-                      : "bg-transparent text-espresso border-border hover:border-espresso-muted"
-                  }`}
-                >
-                  {course}
-                </button>
-              ))}
+            </label>
+            <div
+              className="flex w-full items-center justify-between gap-2 bg-surface-card border border-border rounded-lg px-4 py-2.5 text-left text-sm font-medium text-espresso outline-none focus:border-caramel transition-colors flex-wrap"
+            >
+              <div className="flex flex-wrap gap-2 items-center flex-1">
+                {activeCourses.length > 0 && (
+                  activeCourses.map((course) => (
+                    <div
+                      key={course}
+                      className="flex items-center gap-1.5 bg-espresso text-white px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                    >
+                      <span>{course}</span>
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCourse(course);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            toggleCourse(course);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="hover:opacity-70 transition-opacity flex items-center justify-center cursor-pointer"
+                        aria-label={`Remove ${course}`}
+                      >
+                        ✕
+                      </div>
+                    </div>
+                  ))
+                )}
+                <input
+                  type="text"
+                  value={courseFilterSearch}
+                  onChange={(e) => setCourseFilterSearch(e.target.value)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsCourseFilterOpen(true);
+                  }}
+                  placeholder="Search..."
+                  className="bg-transparent border-0 px-2 py-1 text-xs text-espresso placeholder:text-espresso-muted outline-none"
+                />
+              </div>
+              <button
+                id="course-filter"
+                onClick={() => {
+                  setIsCourseFilterOpen((open) => !open);
+                  if (isCourseFilterOpen) {
+                    setCourseFilterSearch("");
+                  }
+                }}
+                className="shrink-0 text-espresso-muted hover:text-espresso transition-colors cursor-pointer"
+              >
+                {isCourseFilterOpen ? "^" : "v"}
+              </button>
             </div>
+
+            {isCourseFilterOpen && (
+              <div
+                className="absolute z-10 mt-2 flex w-full flex-col overflow-hidden rounded-lg border border-border bg-surface-card p-2 shadow-lg"
+                style={{ maxHeight: "min(24rem, calc(100vh - 16rem))" }}
+              >
+                <button
+                  onClick={() => {
+                    setSelectedCourses([]);
+                    setCourseFilterSearch("");
+                  }}
+                  className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors cursor-pointer ${activeCourses.length === 0
+                      ? "bg-espresso text-white"
+                      : "text-espresso hover:bg-background"
+                    }`}
+                >
+                  All courses
+                </button>
+                <div className="my-2 border-t border-border" />
+                <div className="min-h-0 overflow-y-auto">
+                  {filteredCourseOptions.length > 0 ? (
+                    filteredCourseOptions.map((course) => {
+                      const isSelected = activeCourses.includes(course);
+
+                      return (
+                        <label
+                          key={course}
+                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-espresso hover:bg-background cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleCourse(course)}
+                            className="h-4 w-4 accent-espresso"
+                          />
+                          <span className="truncate">{course}</span>
+                        </label>
+                      );
+                    })
+                  ) : (
+                    <p className="px-3 py-2 text-sm italic text-espresso-muted">
+                      No courses found.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -108,7 +225,7 @@ export default function RoomsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {filtered.length > 0 ? (
               filtered.map((room) => (
-                <RoomCard 
+                <RoomCard
                   key={room._id}
                   room={room}
                   handleJoinRoom={handleJoinRoom}

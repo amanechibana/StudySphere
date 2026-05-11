@@ -11,6 +11,7 @@ import {
   messageParamsSchema,
   updateMessageBodySchema,
 } from "../schema/message.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ const router = Router();
 router.get(
   "/:id",
   validateParams(messageParamsSchema),
+  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /messages/${req.params.id}`);
     try {
@@ -39,6 +41,7 @@ router.patch(
   "/:id",
   validateParams(messageParamsSchema),
   validateBody(updateMessageBodySchema),
+  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`PATCH /messages/${req.params.id}`);
     try {
@@ -62,6 +65,7 @@ router.patch(
 router.delete(
   "/:id",
   validateParams(messageParamsSchema),
+  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`DELETE /messages/${req.params.id}`);
     try {
