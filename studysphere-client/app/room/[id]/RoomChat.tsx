@@ -94,7 +94,9 @@ function VoiceControls({
             </span>
           ))}
           {others.length > 3 && (
-            <span className="text-[10px] text-espresso-muted/60">+{others.length - 3}</span>
+            <span className="text-[10px] text-espresso-muted/60">
+              +{others.length - 3}
+            </span>
           )}
         </div>
       )}
@@ -141,8 +143,14 @@ export default function RoomChat({
   function onScroll() {
     const el = scrollRef.current;
     if (!el) return;
-    isNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    if (initialScrollDone.current && el.scrollTop < 80 && hasMore && !loadingMore) {
+    isNearBottom.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (
+      initialScrollDone.current &&
+      el.scrollTop < 80 &&
+      hasMore &&
+      !loadingMore
+    ) {
       loadMore?.();
     }
   }
@@ -162,7 +170,11 @@ export default function RoomChat({
     prevMessageCount.current = messages.length;
 
     // older messages were prepended and restores position so view doesn't jump
-    if (prevScrollHeight.current !== null && messageCountIncreased && !isNearBottom.current) {
+    if (
+      prevScrollHeight.current !== null &&
+      messageCountIncreased &&
+      !isNearBottom.current
+    ) {
       el.scrollTop = el.scrollHeight - prevScrollHeight.current;
       prevScrollHeight.current = null;
       return;
@@ -267,8 +279,8 @@ export default function RoomChat({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
-            className={`flex-1 bg-background border border-border rounded-xl text-sm text-espresso placeholder:text-border/80 outline-none focus:border-caramel/60 transition-all duration-300 ${minimized ? "px-3 py-2" : "px-4 py-3"}`}
+            placeholder={minimized ? "Message..." : "Type a message..."}
+            className={`flex-1 min-w-0 bg-background border border-border rounded-xl text-sm text-espresso placeholder:text-border/80 outline-none focus:border-caramel/60 transition-all duration-300 ${minimized ? "px-3 py-2" : "px-4 py-3"}`}
           />
           <button
             type="submit"
