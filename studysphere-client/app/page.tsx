@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import useAuthStore from "./stores/authStore";
 
 const features = [
@@ -170,6 +171,8 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+
+      <Footer />
 
       {selectedFeature && (
         <div
