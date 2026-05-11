@@ -175,8 +175,9 @@ export const initSockets = (io: Server) => {
       socket.join(roomId);
       socketToRoom.set(socket.id, roomId);
 
-      // notify users that the user joined the room
-      socket.to(roomId).emit("user_joined", {
+      // notify users that the user joined the room (including the joiner
+      // so their client can refresh the member list)
+      io.to(roomId).emit("user_joined", {
         message: `${user.username} joined the room`,
         user: {
           _id: user._id,
