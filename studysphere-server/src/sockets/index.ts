@@ -115,8 +115,7 @@ export const initSockets = (io: Server) => {
         console.log("Room is not active");
         return;
       }
-      await archiveRoomIfStillInactive(roomId);
-      const updatedRoom = await getRoomById(roomId);
+      const updatedRoom = await archiveRoomIfStillInactive(roomId);
       if (updatedRoom && isRoomArchived(updatedRoom as any)) {
         console.log("Room is archived");
         socket.emit("join_room_error", {

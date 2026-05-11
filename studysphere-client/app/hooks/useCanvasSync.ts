@@ -2,6 +2,7 @@ import { type Dispatch, type SetStateAction, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Stroke, ReceiveStrokePayload } from "../types/stroke.interface";
 import useSocketStore from "../stores/socketStore";
+import useAuthStore from "../stores/authStore";
 import { strokesApi } from "../api/strokes";
 
 export function useCanvasSync(
@@ -10,10 +11,12 @@ export function useCanvasSync(
   setStrokes: Dispatch<SetStateAction<Stroke[]>>
 ) {
   const socket = useSocketStore((s) => s.socket);
+  const firebaseUser = useAuthStore((s) => s.user);
 
   const { data } = useQuery({
     queryKey: ["strokes", roomId],
     queryFn: () => strokesApi.getStrokes(roomId),
+    enabled: !!firebaseUser,
   });
 
   useEffect(() => {

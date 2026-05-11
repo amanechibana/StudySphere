@@ -66,7 +66,7 @@ async function joinPublicRoom(
   const roomId = new ObjectId(id);
   const result = await roomsCollection.findOneAndUpdate(
     { _id: roomId },
-    { $addToSet: { members: userId }, $unset: { lastUserLeftAt: "" } },
+    { $addToSet: { members: userId, pastMembers: userId }, $unset: { lastUserLeftAt: "" } },
     { returnDocument: "after" },
   );
 
@@ -82,7 +82,7 @@ async function joinPrivateRoom(
   const roomId = new ObjectId(id);
   const result = await roomsCollection.findOneAndUpdate(
     { _id: roomId, inviteCode },
-    { $addToSet: { members: userId }, $unset: { lastUserLeftAt: "" } },
+    { $addToSet: { members: userId, pastMembers: userId }, $unset: { lastUserLeftAt: "" } },
     { returnDocument: "after" },
   );
 

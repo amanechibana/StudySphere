@@ -8,9 +8,7 @@ export const summarizeConversation = async (
   messages: AIMessage[],
 ): Promise<string> => {
   try {
-    const transcript = messages
-      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-      .join("\n");
+    const transcript = messages.map((m) => m.content).join("\n");
 
     const prompt = `
         Summarize the following conversation clearly and concisely.

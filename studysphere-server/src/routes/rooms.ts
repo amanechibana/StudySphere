@@ -51,6 +51,84 @@ router.get("/", requireAuth, async (_req: Request, res: Response) => {
   }
 });
 
+// GET /archived, list all archived rooms
+router.get("/archived", requireAuth, async (_req: Request, res: Response) => {
+  console.log("GET /rooms/archived");
+  try {
+    const allRooms = await getRooms();
+    const archivedRooms = allRooms.filter((room) => room.isArchived);
+    res.status(200).json(archivedRooms);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch archived rooms" });
+  }
+});
+
+// GET /archived/:id, get specific archived room with summary
+router.get(
+  "/archived/:id",
+  validateParams(roomParamsSchema),
+  requireAuth,
+  async (req: Request<{ id: string }>, res: Response) => {
+    console.log(`GET /rooms/archived/${req.params.id}`);
+    try {
+      const room = await getRoomById(req.params.id);
+      if (!room || !room.isArchived) {
+        return res.status(404).json({ error: "Archived room not found" });
+      }
+      const userId = req.user?._id;
+      if (!userId || !room.pastMembers?.includes(userId)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      res.status(200).json(room);
+    } catch (err) {
+      console.error(err);
+      res.status(400).json({ error: "Invalid room ID" });
+    }
+  },
+);
+
+// GET /archived/:id/messages — full chat log for an archived room
+router.get(
+  "/archived/:id/messages",
+  validateParams(roomParamsSchema),
+  requireAuth,
+  async (req: Request<{ id: string }>, res: Response) => {
+    console.log(`GET /rooms/archived/${req.params.id}/messages`);
+    try {
+      const room = await getRoomById(req.params.id);
+      if (!room || !room.isArchived) {
+        return res.status(404).json({ error: "Archived room not found" });
+      }
+      const userId = req.user?._id;
+      if (!userId || !room.pastMembers?.includes(userId)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { getAllMessagesByRoomId } = await import("../data/messages.js");
+      const docs = await getAllMessagesByRoomId(req.params.id);
+
+      const uniqueSenderIds = [...new Set(docs.map((m) => m.senderId))];
+      const userDocs = await Promise.all(uniqueSenderIds.map((id) => getUserById(id)));
+      const userMap = new Map(userDocs.filter(Boolean).map((u) => [u!._id, u!.username]));
+
+      const messages = docs.map((m) => ({
+        message: m.body,
+        user: {
+          _id: m.senderId,
+          username: userMap.get(m.senderId) ?? "Unknown",
+        },
+        timestamp: m.createdAt.toISOString(),
+      }));
+
+      res.status(200).json(messages);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  },
+);
+
 // GET /:id
 router.get(
   "/:id",
@@ -98,6 +176,7 @@ router.post(
         capacity: capacity || 0,
         strokes: [],
         members: [],
+        pastMembers: [],
         createdAt: new Date(),
         isArchived: false,
       };
