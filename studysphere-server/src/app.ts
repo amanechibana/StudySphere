@@ -4,7 +4,7 @@ import http from "http";
 import { port } from "./config/settings.js";
 import configRoutes from "./routes/index.js";
 import { initializeSocketLayer } from "./socket.js";
-import { archiveInactiveRooms } from "./helpers.js";
+import { initializeRoomArchiveCallbacks } from "./helpers.js";
 
 const app = express();
 
@@ -28,7 +28,7 @@ async function startApp() {
     console.log(`Your routes will be running on http://localhost:${port}`);
   });
 
-  setInterval(archiveInactiveRooms, 5 * 60 * 1000);
+  await initializeRoomArchiveCallbacks();
 }
 
 void startApp();
