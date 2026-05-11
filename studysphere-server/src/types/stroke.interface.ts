@@ -14,6 +14,7 @@ export type Stroke = {
   width: number;
   points: Point[];
   timestamp: string;
+  userId: string;
 };
 
 export type ReceiveStrokeData = {
