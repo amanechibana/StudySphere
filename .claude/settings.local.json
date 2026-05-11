@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "WebSearch",
+      "Read(//c/Users/barna/AppData/Roaming/Python/Python313/Scripts/**)"
+    ]
+  }
+}
