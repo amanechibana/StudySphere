@@ -5,6 +5,8 @@ export interface User {
   _id: string;
   username: string;
   email: string | null;
+  displayName: string | null;
+  bio: string | null;
   createdAt: Date;
 }
 
@@ -14,7 +16,16 @@ export interface CreateUserRequest {
   email?: string | null;
 }
 
+export interface UpdateProfileRequest {
+  username?: string;
+  email?: string;
+  displayName?: string | null;
+  bio?: string | null;
+}
+
 export const userApi = {
+  getMe: () => api.get<User>("/users/me"),
+  updateMe: (data: UpdateProfileRequest) => api.patch<User>("/users/me", data),
   getUser: (firebaseUid: string) => api.get<User>(`/users/${firebaseUid}`),
   createUser: (userData: CreateUserRequest) =>
     api.post<User>("/users", userData),

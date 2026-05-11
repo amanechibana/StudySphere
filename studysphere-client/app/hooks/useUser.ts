@@ -1,5 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreateUserRequest, userApi } from "../api/user";
+import { CreateUserRequest, UpdateProfileRequest, userApi } from "../api/user";
+
+export function useMe(enabled = true) {
+  return useQuery({
+    queryKey: ["user", "me"],
+    queryFn: () => userApi.getMe(),
+    enabled,
+  });
+}
+
+export function useUpdateMe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdateProfileRequest) => userApi.updateMe(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "me"] });
+    },
+  });
+}
 
 export function useUser(firebaseUid: string) {
   return useQuery({

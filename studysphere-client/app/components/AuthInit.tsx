@@ -6,6 +6,7 @@ import useUserStore from "../stores/userStore";
 import { usePathname, useRouter } from "next/navigation";
 import { onIdTokenChanged } from "firebase/auth";
 import { auth } from "../firebase/firebaseSetup";
+import { userApi } from "../api/user";
 
 export default function AuthInit() {
   const { init, initialized } = useAuthStore();
@@ -22,27 +23,19 @@ export default function AuthInit() {
   useEffect(() => {
     // registers callbacks that will be used to update the user store and returns unsubscribe cleanup function
     const unsubscribe = init({
-      onLogin: async (authenticatedUser) => {
+      onLogin: async () => {
         console.log("[Auth Init] Fetching user data");
         try {
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${authenticatedUser.uid}`,
-            {
-              headers: {
-                Authorization: `Bearer ${await authenticatedUser.getIdToken()}`,
-              },
-            },
-          );
-
-          if (res.ok) {
-            const appUserData = await res.json();
-            setAppUser(appUserData);
-          } else if (res.status === 404) {
-            router.push("/onboarding");
-          }
+          const appUserData = await userApi.getMe();
+          setAppUser(appUserData);
         } catch (err) {
-          console.error("Failed to find app user: ", err);
-          setFetchError(true);
+          const message = err instanceof Error ? err.message : "";
+          if (message.startsWith("404")) {
+            router.push("/onboarding");
+          } else {
+            console.error("Failed to find app user: ", err);
+            setFetchError(true);
+          }
         }
       },
       onLogout: () => {
@@ -62,7 +55,7 @@ export default function AuthInit() {
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
-        console.log(user)
+        console.log(user);
         const token = await user.getIdToken();
         document.cookie = `firebaseToken=${token}; path=/; SameSite=strict`;
       } else {
