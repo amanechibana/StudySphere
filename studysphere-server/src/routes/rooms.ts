@@ -248,7 +248,7 @@ router.get(
     res: Response,
   ) => {
     console.log(`GET /rooms/${req.params.id}/messages`);
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    //await new Promise((resolve) => setTimeout(resolve, 5000));
     try {
       const { before, limit } = req.query;
       const { messages: docs, hasMore } = await getMessagesByRoomId(
