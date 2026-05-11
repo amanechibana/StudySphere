@@ -90,7 +90,7 @@ export default function CreateRoomModal({ onClose }: CreateRoomModalProps) {
             <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-sm font-medium text-espresso-muted">Capacity</label>
               <input
-                type="number" min={1} max={50} required
+                type="number" min={1} max={10} required
                 value={capacity} onChange={(e) => setCapacity(Number(e.target.value))}
                 className="bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-espresso outline-none focus:border-caramel transition-colors"
               />
