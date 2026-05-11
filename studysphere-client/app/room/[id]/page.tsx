@@ -113,8 +113,8 @@ function MembersPanel({
 }) {
   const voiceById = new Map(voiceMembers.map((m) => [m.userId, m]));
   return (
-    <div className="bg-surface-card border border-border rounded-2xl p-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-surface-card border border-border rounded-2xl p-4 flex flex-col min-h-0 flex-1">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase">
           Members
         </p>
@@ -122,13 +122,13 @@ function MembersPanel({
           {room.members.length}/{room.capacity}
         </p>
       </div>
-      <div className="h-1 bg-border/40 rounded-full mb-3 overflow-hidden">
+      <div className="h-1 bg-border/40 rounded-full mb-3 overflow-hidden shrink-0">
         <div
           className="h-full bg-caramel/60 rounded-full transition-all duration-500"
           style={{ width: `${(room.members.length / room.capacity) * 100}%` }}
         />
       </div>
-      <ul className="space-y-1">
+      <ul className="space-y-1 flex-1 min-h-0 overflow-y-auto">
         {room.members.map((memberId, i) => {
           const voice = voiceById.get(memberId);
           const isSpeaking = voice?.speaking && !voice.muted;
@@ -400,13 +400,22 @@ export default function RoomPage({
                 onUndo={sendUndo}
               />
             </div>
-            <div className="w-52 shrink-0 flex flex-col gap-4 min-h-0 overflow-y-auto">
+            <div className="w-52 shrink-0 flex flex-col gap-4 min-h-0">
               <MembersPanel
                 room={room}
                 userId={user?._id}
                 voiceMembers={voice.members}
               />
               <DetailsPanel room={room} />
+              <button
+                onClick={() => {
+                  disconnect();
+                  router.push("/rooms");
+                }}
+                className="shrink-0 w-full bg-surface-card text-espresso border border-border text-sm font-semibold py-2.5 rounded-xl hover:bg-surface transition-colors cursor-pointer"
+              >
+                Leave room
+              </button>
             </div>
           </div>
         ) : (
@@ -424,7 +433,7 @@ export default function RoomPage({
                 />
               </div>
             </div>
-            <div className="lg:col-span-4 flex flex-col gap-3 min-h-0 overflow-y-auto">
+            <div className="lg:col-span-4 flex flex-col gap-3 min-h-0">
               <MembersPanel
                 room={room}
                 userId={user?._id}
@@ -436,7 +445,7 @@ export default function RoomPage({
                   disconnect();
                   router.push("/rooms");
                 }}
-                className="w-full text-espresso-muted/50 text-xs font-medium py-3 rounded-xl hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all duration-300 cursor-pointer"
+                className="shrink-0 w-full bg-surface-card text-espresso border border-border text-sm font-semibold py-2.5 rounded-xl hover:bg-surface transition-colors cursor-pointer"
               >
                 Leave room
               </button>
