@@ -79,15 +79,6 @@ function scheduleRoomArchive(roomId: string, lastUserLeftAt?: Date): void {
 }
 
 /**
- * Updates room archive status if it should be archived
- * If the room meets archiving criteria, sets isArchived to true
- * Returns the updated room or null if update failed
- */
-async function updateRoomArchiveStatus(roomId: string): Promise<WithId<NewRoom> | null> {
-  return archiveRoomIfStillInactive(roomId);
-}
-
-/**
  * Schedules archive callbacks for currently empty rooms when the server starts.
  * This is a one-time bootstrap, not a polling loop.
  */
@@ -110,6 +101,5 @@ export {
   scheduleRoomArchive,
   cancelRoomArchive,
   archiveRoomIfStillInactive,
-  updateRoomArchiveStatus,
-  initializeRoomArchiveCallbacks,
+  initializeRoomArchiveCallbacks
 };
