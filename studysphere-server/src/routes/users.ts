@@ -10,6 +10,7 @@ import {
 } from "../data/users.js";
 import type { User } from "../types/user.interface.js";
 import { validateBody, validateParams } from "../middleware/validateFields.js";
+import { requireAuth } from "../middleware/auth.js";
 import {
   userIdParamsSchema,
   createUserBodySchema,
@@ -19,7 +20,6 @@ import {
   type UserParams,
 } from "../schema/user.js";
 import type { ErrorResponse } from "../types/api.interface.ts";
-import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -34,6 +34,51 @@ router.get("/", requireAuth, async (_req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch users" });
   }
 });
+
+// GET /me — current authenticated user
+router.get(
+  "/me",
+  requireAuth,
+  async (req: Request, res: Response<User | ErrorResponse>) => {
+    console.log("GET /users/me");
+    try {
+      const user = await getUserById(req.user!._id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.status(200).json(user);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch current user" });
+    }
+  },
+);
+
+// PATCH /me — update current authenticated user's profile
+router.patch(
+  "/me",
+  requireAuth,
+  validateBody(updateUserBodySchema),
+  async (
+    req: Request<ParamsDictionary, User | ErrorResponse, UpdateUserBody>,
+    res: Response<User | ErrorResponse>,
+  ) => {
+    console.log("PATCH /users/me");
+    try {
+      const updatedUser = await updateUser(
+        req.user!._id,
+        req.body as Partial<User>,
+      );
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.status(200).json(updatedUser);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  },
+);
 
 // GET /:id — _id is the Firebase UID
 router.get(
@@ -71,6 +116,7 @@ router.post(
         _id: firebaseUid,
         username,
         email: email ?? null,
+        displayName: null,
         createdAt: new Date(),
       };
 
