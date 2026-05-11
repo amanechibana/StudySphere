@@ -7,12 +7,11 @@ export interface Room {
 	inviteCode: string,
 	isPrivate: boolean,
 	capacity: number,
-	isArchived: boolean,
 
 	// canvasId: canvas
 	
 	members: string[],
 	createdAt: Date,
-	isArchived?: boolean,
+	isArchived: boolean,
 	summary?: string,
 }

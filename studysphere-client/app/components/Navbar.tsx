@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Coffee } from "lucide-react";
 import { useRooms } from "../hooks/useRoom";
 import useAuthStore from "../stores/authStore";
-import { ArrowLeft } from "lucide-react";
 import useUserStore from "../stores/userStore";
 
 interface NavbarProps {
@@ -10,8 +10,6 @@ interface NavbarProps {
   roomName?: string;
   roomSubtitle?: string;
 }
-
-import { Coffee } from "lucide-react";
 
 export default function Navbar({
   backHref,
@@ -57,19 +55,19 @@ export default function Navbar({
 
   return (
     <nav className="bg-surface border-b border-border px-6 py-4 flex items-center justify-between">
-      {/* Left: back button or logo */}
       <div className="flex items-center gap-4">
         {backHref && (
           <Link
             href={backHref}
             className="border border-border rounded-lg px-3 py-1.5 text-sm text-espresso hover:bg-border/40 transition-colors"
           >
-            <div className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5">
               <ArrowLeft className="w-4 h-4" />
               Back
-            </div>
+            </span>
           </Link>
         )}
+
         {roomName ? (
           <div>
             <h1 className="font-semibold text-espresso leading-tight">
@@ -81,9 +79,7 @@ export default function Navbar({
           </div>
         ) : (
           <Link href="/" className="flex items-center gap-1.5 select-none">
-            <span>
-              <Coffee className="w-6 h-6 text-caramel" />
-            </span>
+            <Coffee className="w-6 h-6 text-caramel" />
             <span className="font-bold text-espresso text-lg tracking-tight">
               Study
             </span>
@@ -108,83 +104,85 @@ export default function Navbar({
           >
             Archive
           </Link>
-        <div className="relative flex items-center gap-3" ref={dropdownRef}>
-          {appUser && (
-            <button
-              type="button"
-              className="w-9 h-9 rounded-full bg-caramel flex items-center justify-center text-white text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
-              title={profileName}
-              aria-label="Open profile menu"
-              aria-expanded={isProfileOpen}
-              aria-haspopup="menu"
-              onClick={() => setIsProfileOpen((open) => !open)}
-            >
-              {profileInitial}
-            </button>
-          )}
 
-          {appUser && isProfileOpen && (
-            <div
-              role="menu"
-              className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-lg border border-border bg-surface-card shadow-lg"
-            >
-              <div className="border-b border-border px-4 py-3">
-                <p className="truncate text-sm font-semibold text-espresso">
-                  {profileName}
-                </p>
-                <p className="truncate text-xs text-espresso-muted">
-                  @{appUser.username}
-                </p>
-              </div>
+          <div className="relative flex items-center" ref={dropdownRef}>
+            {appUser && (
+              <button
+                type="button"
+                className="w-9 h-9 rounded-full bg-caramel flex items-center justify-center text-white text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                title={profileName}
+                aria-label="Open profile menu"
+                aria-expanded={isProfileOpen}
+                aria-haspopup="menu"
+                onClick={() => setIsProfileOpen((open) => !open)}
+              >
+                {profileInitial}
+              </button>
+            )}
 
-              <div className="border-b border-border py-2">
-                <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-widest text-espresso-muted">
-                  Rooms you created
-                </p>
-                {createdRooms.length > 0 ? (
-                  createdRooms.map((room) => (
-                    <Link
-                      key={room._id}
-                      href={`/room/${room._id}`}
-                      role="menuitem"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="block px-4 py-2 text-sm text-espresso transition-colors hover:bg-background"
-                    >
-                      <span className="block truncate font-medium">
-                        {room.name}
-                      </span>
-                      <span className="block truncate text-xs text-espresso-muted">
-                        {room.course}
-                      </span>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="px-4 py-2 text-sm italic text-espresso-muted">
-                    No rooms yet.
+            {appUser && isProfileOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-lg border border-border bg-surface-card shadow-lg"
+              >
+                <div className="border-b border-border px-4 py-3">
+                  <p className="truncate text-sm font-semibold text-espresso">
+                    {profileName}
                   </p>
-                )}
-              </div>
+                  <p className="truncate text-xs text-espresso-muted">
+                    @{appUser.username}
+                  </p>
+                </div>
 
-              <div className="py-2">
-                <Link
-                  href="/profile"
-                  role="menuitem"
-                  onClick={() => setIsProfileOpen(false)}
-                  className="block px-4 py-2 text-sm font-medium text-espresso transition-colors hover:bg-background"
-                >
-                  Settings
-                </Link>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="w-full px-4 py-2 text-left text-sm font-medium text-espresso transition-colors hover:bg-background cursor-pointer"
-                  onClick={handleLogout}
-                >
-                  Sign out
-                </button>
+                <div className="border-b border-border py-2">
+                  <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-widest text-espresso-muted">
+                    Rooms you created
+                  </p>
+                  {createdRooms.length > 0 ? (
+                    createdRooms.map((room) => (
+                      <Link
+                        key={room._id}
+                        href={`/room/${room._id}`}
+                        role="menuitem"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-4 py-2 text-sm text-espresso transition-colors hover:bg-background"
+                      >
+                        <span className="block truncate font-medium">
+                          {room.name}
+                        </span>
+                        <span className="block truncate text-xs text-espresso-muted">
+                          {room.course}
+                        </span>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="px-4 py-2 text-sm italic text-espresso-muted">
+                      No rooms yet.
+                    </p>
+                  )}
+                </div>
+
+                <div className="py-2">
+                  <Link
+                    href="/profile"
+                    role="menuitem"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="block px-4 py-2 text-sm font-medium text-espresso transition-colors hover:bg-background"
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full px-4 py-2 text-left text-sm font-medium text-espresso transition-colors hover:bg-background cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    Sign out
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ) : (
         <Link
