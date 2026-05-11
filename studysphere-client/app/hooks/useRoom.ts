@@ -2,10 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { roomApi, CreateRoomBody } from "../api/room";
 import type { ArchivedMessage } from "../api/room";
 
-export function useRooms() {
+export function useRooms(enabled = true) {
   return useQuery({
     queryKey: ["rooms"],
     queryFn: () => roomApi.getRooms(),
+    enabled,
   });
 }
 
