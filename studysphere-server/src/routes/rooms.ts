@@ -31,6 +31,7 @@ import {
 } from "../schema/message.js";
 import { requireAuth } from "../middleware/auth.js";
 import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
+import { cacheMessages, invalidateMessageCache } from "../middleware/cache.js";
 
 const router = Router();
 
@@ -241,11 +242,13 @@ router.get(
   validateParams(roomParamsSchema),
   validateQuery(listMessagesQuerySchema),
   requireAuth,
+  cacheMessages,
   async (
     req: Request<{ id: string }, unknown, unknown, ListMessagesQuery>,
     res: Response,
   ) => {
     console.log(`GET /rooms/${req.params.id}/messages`);
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     try {
       const { before, limit } = req.query;
       const { messages: docs, hasMore } = await getMessagesByRoomId(
@@ -300,6 +303,8 @@ router.post(
       };
 
       const createdMessage = await createMessage(newMessage);
+
+      await invalidateMessageCache(req.params.id);
 
       res.status(201).json(createdMessage);
     } catch (err) {

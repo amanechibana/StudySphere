@@ -2,13 +2,29 @@ import { createClient } from "redis";
 import type { Request, Response, NextFunction } from "express";
 
 const redisClient = createClient({ url: process.env.REDIS_URL });
-redisClient.connect().catch(console.error);
+let redisConnected = false;
+
+redisClient.on("error", (err) => {
+  console.error("Redis client error:", err);
+});
+
+redisClient
+  .connect()
+  .then(() => {
+    redisConnected = true;
+    console.log("Redis cache connected");
+  })
+  .catch(console.error);
 
 export async function cacheMessages(
   req: Request<{ id: string }>,
   res: Response,
   next: NextFunction,
 ) {
+  if (!redisConnected) {
+    console.log("Redis not connected, skipping cache");
+    return next();
+  }
   try {
     const { id: roomId } = req.params;
     const { before, limit } = req.query;
@@ -25,9 +41,9 @@ export async function cacheMessages(
     // store original json
     const originalJson = res.json.bind(res);
     res.json = function (data: any) {
-      // cache response for 5 minutes
+      // cache response for 60 minutes
       redisClient
-        .setEx(cacheKey, 300, JSON.stringify(data))
+        .setEx(cacheKey, 3600, JSON.stringify(data))
         .catch(console.error);
       return originalJson(data);
     };

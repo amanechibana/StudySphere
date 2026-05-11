@@ -40,6 +40,7 @@ import {
   type VoiceAnswerPayload,
   type VoiceIcePayload,
 } from "../schema/socket.js";
+import { invalidateMessageCache } from "../middleware/cache.js";
 
 const socketToRoom = new Map<string, string>();
 
@@ -301,6 +302,8 @@ export const initSockets = (io: Server) => {
         createdAt: now,
         updatedAt: now,
       });
+
+      await invalidateMessageCache(roomId);
 
       io.to(roomId).emit("receive_message", {
         message,
