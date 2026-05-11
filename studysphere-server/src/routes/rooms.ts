@@ -30,8 +30,13 @@ import {
   type ListMessagesQuery,
 } from "../schema/message.js";
 import { requireAuth } from "../middleware/auth.js";
-import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
 import { cacheMessages, invalidateMessageCache } from "../middleware/cache.js";
+import {
+  cancelRoomArchive,
+  isRoomArchived,
+  scheduleRoomArchive,
+  updateRoomArchiveStatus
+} from "../helpers.js";
 
 const router = Router();
 
@@ -195,12 +200,14 @@ router.post(
         if (!joinedRoom) {
           return res.status(404).json({ error: "Failed to join room" });
         }
+        cancelRoomArchive(roomId);
         res.status(200).json(joinedRoom);
       } else {
         const joinedRoom = await joinPublicRoom(roomId, userId);
         if (!joinedRoom) {
           return res.status(404).json({ error: "Failed to join room" });
         }
+        cancelRoomArchive(roomId);
         res.status(200).json(joinedRoom);
       }
     } catch (err) {
@@ -227,6 +234,9 @@ router.post(
       const leftRoom = await leaveRoom(roomId, userId);
       if (!leftRoom) {
         return res.status(404).json({ error: "Failed to leave room" });
+      }
+      if (leftRoom.members.length === 0) {
+        scheduleRoomArchive(roomId, leftRoom.lastUserLeftAt);
       }
       res.json(leftRoom);
     } catch (err) {

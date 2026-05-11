@@ -4,6 +4,7 @@ import http from "http";
 import { port } from "./config/settings.js";
 import configRoutes from "./routes/index.js";
 import { initializeSocketLayer } from "./socket.js";
+import { initializeRoomArchiveCallbacks } from "./helpers.js";
 
 const app = express();
 
@@ -26,6 +27,8 @@ async function startApp() {
     console.log("We've now got a server!");
     console.log(`Your routes will be running on http://localhost:${port}`);
   });
+
+  await initializeRoomArchiveCallbacks();
 }
 
 void startApp();

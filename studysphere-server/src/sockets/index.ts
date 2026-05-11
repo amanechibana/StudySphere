@@ -17,7 +17,12 @@ import type {
   ReceiveStrokeData,
   SendStrokeData,
 } from "../types/stroke.interface.js";
-import { isRoomArchived, updateRoomArchiveStatus } from "../helpers.js";
+import {
+  archiveRoomIfStillInactive,
+  cancelRoomArchive,
+  isRoomArchived,
+  scheduleRoomArchive,
+} from "../helpers.js";
 import {
   joinRoomSchema,
   sendMessageSchema,
@@ -114,7 +119,7 @@ export const initSockets = (io: Server) => {
         console.log("Room is not active");
         return;
       }
-      await updateRoomArchiveStatus(roomId);
+      await archiveRoomIfStillInactive(roomId);
       const updatedRoom = await getRoomById(roomId);
       if (updatedRoom && isRoomArchived(updatedRoom as any)) {
         console.log("Room is archived");
@@ -136,7 +141,10 @@ export const initSockets = (io: Server) => {
         socket.leave(currentRoom);
         console.log(`User ${socket.id} left ${currentRoom}`);
         // removes user from room in database
-        await leaveRoom(currentRoom, userId);
+        const leftCurrentRoom = await leaveRoom(currentRoom, userId);
+        if (leftCurrentRoom?.members.length === 0) {
+          scheduleRoomArchive(currentRoom, leftCurrentRoom.lastUserLeftAt);
+        }
 
         // notify users that the user left the room
         socket.to(currentRoom).emit("user_left", {
@@ -178,6 +186,7 @@ export const initSockets = (io: Server) => {
       // join room and update mapping
       socket.join(roomId);
       socketToRoom.set(socket.id, roomId);
+      cancelRoomArchive(roomId);
 
       // notify users that the user joined the room (including the joiner
       // so their client can refresh the member list)
@@ -446,7 +455,12 @@ export const initSockets = (io: Server) => {
         socketToRoom.delete(socket.id);
 
         // removes user from room in database
-        await leaveRoom(roomId, userId);
+        const leftRoom = await leaveRoom(roomId, userId);
+
+        // if room is now empty, schedule archive callback
+        if (leftRoom && leftRoom.members && leftRoom.members.length === 0) {
+          scheduleRoomArchive(roomId, leftRoom.lastUserLeftAt);
+        }
 
         // notify users that the user left the room
         const message = `${user.username} left the room`;
