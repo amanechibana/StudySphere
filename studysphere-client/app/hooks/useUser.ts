@@ -9,6 +9,14 @@ export function useMe(enabled = true) {
   });
 }
 
+export function useUsers(enabled = true) {
+  return useQuery({
+    queryKey: ["users"],
+    queryFn: () => userApi.getUsers(),
+    enabled,
+  });
+}
+
 export function useUpdateMe() {
   const queryClient = useQueryClient();
   return useMutation({

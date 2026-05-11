@@ -22,6 +22,7 @@ export interface UpdateProfileRequest {
 }
 
 export const userApi = {
+  getUsers: () => api.get<User[]>("/users"),
   getMe: () => api.get<User>("/users/me"),
   updateMe: (data: UpdateProfileRequest) => api.patch<User>("/users/me", data),
   getUser: (firebaseUid: string) => api.get<User>(`/users/${firebaseUid}`),

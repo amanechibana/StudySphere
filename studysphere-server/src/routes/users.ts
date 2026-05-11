@@ -20,7 +20,6 @@ import {
   type UserParams,
 } from "../schema/user.js";
 import type { ErrorResponse } from "../types/api.interface.ts";
-import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 

@@ -13,11 +13,13 @@ import { useRoom } from "../../hooks/useRoom";
 import type { Stroke } from "../../types/stroke.interface";
 import { useCanvasSync } from "../../hooks/useCanvasSync";
 import { useVoiceChat, type VoiceMember } from "../../hooks/useVoiceChat";
+import { useUsers } from "../../hooks/useUser";
 import RoomChat from "./RoomChat";
 import RoomCanvas from "../../components/canvas/RoomCanvas";
 import SessionTimer from "./SessionTimer";
 
 import type { Room } from "../../types/room.interface";
+import type { User } from "../../api/user";
 
 const MEMBER_COLORS = [
   "bg-amber-800/20 border-amber-800/30 text-amber-900",
@@ -106,10 +108,12 @@ function MembersPanel({
   room,
   userId,
   voiceMembers,
+  usersById,
 }: {
   room: Room;
   userId?: string;
   voiceMembers: VoiceMember[];
+  usersById: Map<string, User>;
 }) {
   const voiceById = new Map(voiceMembers.map((m) => [m.userId, m]));
   return (
@@ -131,30 +135,32 @@ function MembersPanel({
       <ul className="space-y-1 flex-1 min-h-0 overflow-y-auto">
         {room.members.map((memberId, i) => {
           const voice = voiceById.get(memberId);
+          const member = usersById.get(memberId);
+          const profileName =
+            member?.displayName ?? member?.username;
+          const displayName =
+            profileName ?? (memberId === userId ? "You" : "Loading...");
+          const initial = profileName?.slice(0, 1).toUpperCase() ?? "?";
           const isSpeaking = voice?.speaking && !voice.muted;
           return (
             <li
               key={memberId}
-              className={`flex items-center gap-2 p-1.5 rounded-xl border transition-colors duration-200 ${
-                isSpeaking
+              className={`flex items-center gap-2 p-1.5 rounded-xl border transition-colors duration-200 ${isSpeaking
                   ? "bg-emerald-50/60 border-emerald-200"
                   : "border-transparent hover:bg-background/60"
-              }`}
+                }`}
             >
               <div
-                className={`relative w-7 h-7 rounded-full border flex items-center justify-center text-xs font-semibold ${MEMBER_COLORS[i % MEMBER_COLORS.length]} ${
-                  isSpeaking
+                className={`relative w-7 h-7 rounded-full border flex items-center justify-center text-xs font-semibold ${MEMBER_COLORS[i % MEMBER_COLORS.length]} ${isSpeaking
                     ? "ring-2 ring-emerald-400/70 ring-offset-1 ring-offset-surface-card"
                     : ""
-                }`}
+                  }`}
               >
-                {String.fromCharCode(65 + i)}
+                {initial}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-espresso truncate">
-                  {memberId === userId
-                    ? "You"
-                    : (voice?.username ?? `Scholar ${i + 1}`)}
+                  {displayName}
                 </p>
                 <p className="text-[11px] text-espresso-muted/60 truncate">
                   {voice
@@ -261,6 +267,8 @@ export default function RoomPage({
   const { disconnect, socket } = useSocketStore();
   const queryClient = useQueryClient();
   const { data: room, isLoading, isError } = useRoom(id);
+  const { data: users = [] } = useUsers(!!room);
+  const usersById = new Map(users.map((member) => [member._id, member]));
 
   useEffect(() => {
     if (!socket) return;
@@ -354,20 +362,18 @@ export default function RoomPage({
             <button
               type="button"
               onClick={() => setCanvasOpen((o) => !o)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                canvasOpen
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${canvasOpen
                   ? "bg-espresso text-[#faf8f3] border-espresso"
                   : "text-espresso-muted border-border hover:border-espresso-muted hover:text-espresso"
-              }`}
+                }`}
             >
               {canvasOpen ? "Close canvas" : "Canvas"}
             </button>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                room.isPrivate
+              className={`px-3 py-1 rounded-full text-xs font-medium ${room.isPrivate
                   ? "bg-caramel/10 text-caramel border border-caramel/30"
                   : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-              }`}
+                }`}
             >
               {room.isPrivate ? "Private" : "Public"}
             </span>
@@ -405,6 +411,7 @@ export default function RoomPage({
                 room={room}
                 userId={user?._id}
                 voiceMembers={voice.members}
+                usersById={usersById}
               />
               <DetailsPanel room={room} />
               <button
@@ -438,6 +445,7 @@ export default function RoomPage({
                 room={room}
                 userId={user?._id}
                 voiceMembers={voice.members}
+                usersById={usersById}
               />
               <DetailsPanel room={room} />
               <button
