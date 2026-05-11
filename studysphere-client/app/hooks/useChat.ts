@@ -2,13 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatMessage } from "../types/chatMessage.interface";
 import useSocketStore from "../stores/socketStore";
 import { roomApi } from "../api/room";
+import useAuthStore from "../stores/authStore";
 
 export function useChat(roomId: string) {
   const socket = useSocketStore((s) => s.socket);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  
+  const { user: firebaseUser } = useAuthStore();
+
   // ref to oldest message timestamp
   const cursorRef = useRef<string | undefined>(undefined);
 
@@ -20,9 +22,8 @@ export function useChat(roomId: string) {
       setHasMore(more);
       if (ordered.length > 0) cursorRef.current = ordered[0].timestamp;
     });
-  }, [roomId]);
+  }, [roomId, firebaseUser]);
 
- 
   useEffect(() => {
     if (!socket) return;
     function handleMessage(data: ChatMessage) {
@@ -34,14 +35,19 @@ export function useChat(roomId: string) {
       });
     }
     socket.on("receive_message", handleMessage);
-    return () => { socket.off("receive_message", handleMessage); };
+    return () => {
+      socket.off("receive_message", handleMessage);
+    };
   }, [socket, roomId]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore) return;
     setLoadingMore(true);
     try {
-      const { messages: page, hasMore: more } = await roomApi.getMessages(roomId, cursorRef.current);
+      const { messages: page, hasMore: more } = await roomApi.getMessages(
+        roomId,
+        cursorRef.current,
+      );
       const ordered = [...page].reverse();
       setMessages((prev) => [...ordered, ...prev]);
       setHasMore(more);

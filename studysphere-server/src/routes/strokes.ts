@@ -8,6 +8,7 @@ import { undoStrokeToRoom, addStrokeToRoom } from "../data/rooms.js";
 import type { Stroke } from "../types/stroke.interface.js";
 import { getUserById } from "../data/users.js";
 import { sendStrokeSchema } from "../schema/socket.js";
+import { cacheStrokes, invalidateStrokeCache } from "../middleware/cache.js";
 
 const router = Router();
 
@@ -15,7 +16,9 @@ router.get(
   "/:id",
   validateParams(roomParamsSchema),
   requireAuth,
+  cacheStrokes,
   async (req: Request<{ id: string }>, res: Response) => {
+    //await new Promise((resolve) => setTimeout(resolve, 5000));
     console.log(`GET /strokes/${req.params.id}`);
     try {
       const roomId = req.params.id;
@@ -67,6 +70,7 @@ router.post(
         console.log("Failed to add stroke to room");
         return res.status(404).json({ error: "Failed to add stroke to room" });
       }
+      await invalidateStrokeCache(roomId);
       res.status(200).json(result);
     } catch (err) {
       console.error(err);
@@ -92,6 +96,7 @@ router.post(
         return res.status(404).json({ error: "Failed to undo stroke" });
       }
 
+      await invalidateStrokeCache(roomId);
       res.status(200).json(undoResult);
     } catch (err) {
       console.error(err);
