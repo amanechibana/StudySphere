@@ -45,6 +45,10 @@ import {
   type VoiceAnswerPayload,
   type VoiceIcePayload,
 } from "../schema/socket.js";
+import {
+  invalidateMessageCache,
+  invalidateStrokeCache,
+} from "../middleware/cache.js";
 
 const socketToRoom = new Map<string, string>();
 
@@ -225,6 +229,7 @@ export const initSockets = (io: Server) => {
         return;
       }
       const result = await addStrokeToRoom(roomId, stroke);
+      await invalidateStrokeCache(roomId);
       if (!result) {
         console.log("Failed to add stroke to room");
         return;
@@ -245,6 +250,7 @@ export const initSockets = (io: Server) => {
       const userId = socket.data.userId;
       if (!roomId || !userId) return;
       const undoResult = await undoStrokeToRoom(roomId, userId);
+      await invalidateStrokeCache(roomId);
       if (!undoResult) {
         console.log("Failed to undo stroke");
         return;
@@ -309,6 +315,8 @@ export const initSockets = (io: Server) => {
         createdAt: now,
         updatedAt: now,
       });
+
+      await invalidateMessageCache(roomId);
 
       io.to(roomId).emit("receive_message", {
         message,
