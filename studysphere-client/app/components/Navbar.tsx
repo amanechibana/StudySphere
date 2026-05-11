@@ -70,12 +70,26 @@ export default function Navbar({
         </div>
       </div> */}
       {!initialized ? null : user ? (
-        <button
-          className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
-          onClick={handleLogout}
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/rooms"
+            className="text-sm font-medium text-espresso-muted hover:text-espresso transition-colors"
+          >
+            Rooms
+          </Link>
+          <Link
+            href="/rooms/archived"
+            className="text-sm font-medium text-espresso-muted hover:text-espresso transition-colors"
+          >
+            Archive
+          </Link>
+          <button
+            className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
+            onClick={handleLogout}
+          >
+            Sign out
+          </button>
+        </div>
       ) : (
         <Link
           href="/login"

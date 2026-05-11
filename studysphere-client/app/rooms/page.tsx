@@ -259,6 +259,7 @@ export default function RoomsPage() {
             )}
           </div>
         </div>
+
       </main>
     </div>
   );

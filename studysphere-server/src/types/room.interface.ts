@@ -17,9 +17,11 @@ export interface Room {
   // canvasId: canvas
 
   members: string[];
+  pastMembers: string[];
   createdAt: Date;
   lastUserLeftAt?: Date;
   isArchived: boolean;
+  summary?: string;
 }
 
 // room fields for insert — MongoDB assigns `_id`

@@ -2,6 +2,9 @@ import type { Room } from "./types/room.interface.js";
 import type { NewRoom } from "./types/room.interface.js";
 import type { WithId } from "mongodb";
 import { getRoomById, updateRoom, getRooms } from "./data/rooms.js";
+import { getAllMessagesByRoomId } from "./data/messages.js";
+import { summarizeConversation } from "./services/aiSummarizer.js";
+import type { AIMessage } from "./types/ai.interface.js";
 
 const ARCHIVE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
 const scheduledRoomArchives = new Map<string, ReturnType<typeof setTimeout>>();
@@ -52,6 +55,23 @@ async function archiveRoomIfStillInactive(
     }
 
     const updated = await updateRoom(roomId, { isArchived: true });
+    if (updated) {
+      getAllMessagesByRoomId(roomId)
+        .then(async (roomMessages) => {
+          if (roomMessages.length === 0) return;
+          const uniqueSenderIds = [...new Set(roomMessages.map((m) => m.senderId))];
+          const { getUserById } = await import("./data/users.js");
+          const userDocs = await Promise.all(uniqueSenderIds.map((id) => getUserById(id)));
+          const userMap = new Map(userDocs.filter(Boolean).map((u) => [u!._id, u!.username]));
+          const aiMessages: AIMessage[] = roomMessages.map((m) => ({
+            role: "user" as const,
+            content: `${userMap.get(m.senderId) ?? "Unknown"}: ${m.body}`,
+          }));
+          const summary = await summarizeConversation(aiMessages);
+          await updateRoom(roomId, { summary });
+        })
+        .catch((e) => console.error("Failed to generate room summary:", e));
+    }
     cancelRoomArchive(roomId);
     console.log(`Archived inactive room: ${room.name} (${room._id})`);
     return updated;
