@@ -1,5 +1,6 @@
 import Link from "next/link";
 import useAuthStore from "../stores/authStore";
+import useUserStore from "../stores/userStore";
 
 interface NavbarProps {
   backHref?: string;
@@ -13,6 +14,7 @@ export default function Navbar({
   roomSubtitle,
 }: NavbarProps) {
   const { user, logout, initialized } = useAuthStore();
+  const { user: appUser } = useUserStore();
 
   async function handleLogout() {
     await logout();
@@ -52,22 +54,26 @@ export default function Navbar({
         )}
       </div>
 
-      {/* <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 border border-border rounded-full px-3 py-1.5 text-sm text-espresso-muted bg-surface-card">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-          <span>{fetch this from redis} studying now</span>
-        </div>
-        <div className="w-9 h-9 rounded-full bg-caramel flex items-center justify-center text-white text-sm font-semibold cursor-pointer">
-          {user.username}
-        </div>
-      </div> */}
       {!initialized ? null : user ? (
-        <button
-          className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
-          onClick={handleLogout}
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-3">
+          {appUser && (
+            <Link
+              href="/profile"
+              className="w-9 h-9 rounded-full bg-caramel flex items-center justify-center text-white text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+              title={appUser.displayName ?? appUser.username}
+            >
+              {(appUser.displayName ?? appUser.username)
+                .slice(0, 1)
+                .toUpperCase()}
+            </Link>
+          )}
+          <button
+            className="shrink-0 bg-espresso text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-espresso-muted transition-colors cursor-pointer"
+            onClick={handleLogout}
+          >
+            Sign out
+          </button>
+        </div>
       ) : (
         <Link
           href="/login"

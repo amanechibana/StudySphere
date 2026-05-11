@@ -1,13 +1,16 @@
 "use client";
 
 import { type Dispatch, type SetStateAction, useMemo } from "react";
-import { useCanvasDrawing, type Stroke } from "../../hooks/useCanvasDrawing";
+import { useCanvasDrawing } from "../../hooks/useCanvasDrawing";
+import type { Stroke } from "../../types/stroke.interface";
 import CanvasToolbar from "./CanvasToolbar";
 
 interface Props {
   strokes: Stroke[];
   setStrokes: Dispatch<SetStateAction<Stroke[]>>;
+  userId?: string;
   onCommit?: (stroke: Stroke) => void;
+  onUndo?: () => void;
 }
 
 function makeCircleCursor(width: number, color: string, isEraser: boolean): string {
@@ -27,7 +30,7 @@ function makeCircleCursor(width: number, color: string, isEraser: boolean): stri
   return `url(${c.toDataURL()}) ${hot} ${hot}, crosshair`;
 }
 
-export default function RoomCanvas({ strokes, setStrokes, onCommit }: Props) {
+export default function RoomCanvas({ strokes, setStrokes, userId, onCommit, onUndo }: Props) {
   const {
     canvasRef,
     tool, setTool,
@@ -35,7 +38,7 @@ export default function RoomCanvas({ strokes, setStrokes, onCommit }: Props) {
     width, setWidth,
     onPointerDown, onPointerMove, onPointerUp, onPointerLeave,
     undo, canUndo,
-  } = useCanvasDrawing(strokes, setStrokes, onCommit);
+  } = useCanvasDrawing(strokes, setStrokes, userId, onCommit, onUndo);
 
   const cursor = useMemo(
     () => makeCircleCursor(width, color, tool === "eraser"),

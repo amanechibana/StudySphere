@@ -1,13 +1,8 @@
 import { type Dispatch, type SetStateAction, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { type Stroke } from "./useCanvasDrawing";
+import type { Stroke, ReceiveStrokePayload } from "../types/stroke.interface";
 import useSocketStore from "../stores/socketStore";
 import { strokesApi } from "../api/strokes";
-
-type ReceiveStrokePayload = {
-  stroke: Stroke;
-  user: { _id: string; username: string };
-};
 
 export function useCanvasSync(
   roomId: string,
@@ -33,16 +28,31 @@ export function useCanvasSync(
       setStrokes((prev) => [...prev, stroke]);
     }
 
+    function handleUndoStroke({ user }: ReceiveStrokePayload) {
+      if (user._id === userId) return;
+      setStrokes((prev) => {
+        const idx = [...prev].reverse().findIndex((s) => s.userId === user._id);
+        if (idx === -1) return prev;
+        const target = prev.length - 1 - idx;
+        return prev.filter((_, i) => i !== target);
+      });
+    }
+
     socket.on("receive_stroke", handleReceiveStroke);
-    return () => { socket.off("receive_stroke", handleReceiveStroke); };
+    socket.on("undo_stroke", handleUndoStroke);
+    return () => {
+      socket.off("receive_stroke", handleReceiveStroke);
+      socket.off("undo_stroke", handleUndoStroke);
+    };
   }, [socket, userId, setStrokes]);
 
   function sendStroke(stroke: Stroke) {
-    socket?.emit("send_stroke", {
-      roomId,
-      stroke: { ...stroke, timestamp: new Date().toISOString() },
-    });
+    socket?.emit("send_stroke", { roomId, stroke });
   }
 
-  return { sendStroke };
+  function sendUndo() {
+    socket?.emit("undo_stroke");
+  }
+
+  return { sendStroke, sendUndo };
 }
