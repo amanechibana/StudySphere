@@ -5,7 +5,7 @@ export type MessageId = string;
 
 export interface Message {
   _id: MessageId;
-  roomId: RoomId;
+  roomId: string;
   senderId: UserId;
   body: string;
   createdAt: Date;
