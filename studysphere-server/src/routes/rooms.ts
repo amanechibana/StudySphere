@@ -36,6 +36,7 @@ import {
   isRoomArchived,
   scheduleRoomArchive,
 } from "../helpers.js";
+import { ObjectId } from "mongodb";
 
 const router = Router();
 
@@ -73,7 +74,7 @@ router.get(
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /rooms/archived/${req.params.id}`);
     try {
-      const room = await getRoomById(req.params.id);
+      const room = await getRoomById(new ObjectId(req.params.id));
       if (!room || !room.isArchived) {
         return res.status(404).json({ error: "Archived room not found" });
       }
@@ -101,7 +102,7 @@ router.get(
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /rooms/archived/${req.params.id}/messages`);
     try {
-      const room = await getRoomById(req.params.id);
+      const room = await getRoomById(new ObjectId(req.params.id));
       if (!room || !room.isArchived) {
         return res.status(404).json({ error: "Archived room not found" });
       }
@@ -111,7 +112,7 @@ router.get(
       }
 
       const { getAllMessagesByRoomId } = await import("../data/messages.js");
-      const docs = await getAllMessagesByRoomId(req.params.id);
+      const docs = await getAllMessagesByRoomId(new ObjectId(req.params.id));
 
       const uniqueSenderIds = [...new Set(docs.map((m) => m.senderId))];
       const userDocs = await Promise.all(uniqueSenderIds.map((id) => getUserById(id)));
@@ -142,7 +143,7 @@ router.get(
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`GET /rooms/${req.params.id}`);
     try {
-      const roomId = req.params.id;
+      const roomId = new ObjectId(req.params.id);
       const room = await getRoomById(roomId);
       if (!room) {
         return res.status(404).json({ error: "Room not found" });
@@ -206,7 +207,7 @@ router.patch(
     console.log(`PATCH /rooms/${req.params.id}`);
     try {
       const updatedRoom = await updateRoom(
-        req.params.id,
+        new ObjectId(req.params.id),
         req.body as Partial<NewRoom>,
       );
       if (!updatedRoom) {
@@ -229,7 +230,7 @@ router.delete(
   async (req: Request<{ id: string }>, res: Response) => {
     console.log(`DELETE /rooms/${req.params.id}`);
     try {
-      const roomId = req.params.id;
+      const roomId = new ObjectId(req.params.id);
       const deleted = await deleteRoom(roomId);
       if (!deleted) {
         return res.status(404).json({ error: "Room not found" });
@@ -256,7 +257,7 @@ router.post(
         return res.status(401).json({ error: "User not found" });
       }
 
-      const roomId = req.params.id;
+      const roomId = new ObjectId(req.params.id);
       const room = await getRoomById(roomId);
       if (!room) {
         return res.status(404).json({ error: "Room not found" });
@@ -282,14 +283,14 @@ router.post(
         if (!joinedRoom) {
           return res.status(404).json({ error: "Failed to join room" });
         }
-        cancelRoomArchive(roomId);
+        cancelRoomArchive(roomId.toString());
         res.status(200).json(joinedRoom);
       } else {
         const joinedRoom = await joinPublicRoom(roomId, userId);
         if (!joinedRoom) {
           return res.status(404).json({ error: "Failed to join room" });
         }
-        cancelRoomArchive(roomId);
+        cancelRoomArchive(roomId.toString());
         res.status(200).json(joinedRoom);
       }
     } catch (err) {
@@ -312,13 +313,13 @@ router.post(
         return res.status(401).json({ error: "User not found" });
       }
 
-      const roomId = req.params.id;
+      const roomId = new ObjectId(req.params.id);
       const leftRoom = await leaveRoom(roomId, userId);
       if (!leftRoom) {
         return res.status(404).json({ error: "Failed to leave room" });
       }
       if (leftRoom.members.length === 0) {
-        scheduleRoomArchive(roomId, leftRoom.lastUserLeftAt);
+        scheduleRoomArchive(roomId.toString(), leftRoom.lastUserLeftAt);
       }
       res.json(leftRoom);
     } catch (err) {
@@ -344,7 +345,7 @@ router.get(
     try {
       const { before, limit } = req.query;
       const { messages: docs, hasMore } = await getMessagesByRoomId(
-        req.params.id,
+        new ObjectId(req.params.id),
         before,
         limit,
       );

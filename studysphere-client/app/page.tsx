@@ -94,9 +94,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="relative min-h-[360px] md:min-h-[440px]">
+            <div className="relative min-h-90 md:min-h-110">
               <div className="absolute left-0 top-6 w-[74%] overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm">
-                <div className="relative aspect-[4/3]">
+                <div className="relative aspect-4/3">
                   <Image
                     src="/rooms2.jpg"
                     alt="StudySphere room browsing"
@@ -109,7 +109,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="absolute right-0 bottom-0 w-[66%] overflow-hidden rounded-lg border border-border bg-surface-card shadow-md">
-                <div className="relative aspect-[4/3]">
+                <div className="relative aspect-4/3">
                   <Image
                     src="/create_room.jpg"
                     alt="StudySphere room creation"
@@ -149,7 +149,7 @@ export default function HomePage() {
                   className="bg-surface-card border border-border rounded-lg overflow-hidden shadow-sm text-left transition-transform hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-caramel focus:ring-offset-2 focus:ring-offset-surface cursor-pointer"
                   aria-label={`Enlarge ${feature.title} image`}
                 >
-                  <div className="relative aspect-[4/3]">
+                  <div className="relative aspect-4/3">
                     <Image
                       src={feature.image}
                       alt={feature.title}
@@ -187,7 +187,7 @@ export default function HomePage() {
             className="w-full max-w-5xl bg-surface-card border border-border rounded-lg overflow-hidden shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="relative aspect-[4/3] md:aspect-[16/9] bg-background">
+            <div className="relative aspect-4/3 md:aspect-video bg-background">
               <Image
                 src={selectedFeature.image}
                 alt={selectedFeature.title}

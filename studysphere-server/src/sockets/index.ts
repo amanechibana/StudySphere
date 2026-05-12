@@ -49,6 +49,7 @@ import {
   invalidateMessageCache,
   invalidateStrokeCache,
 } from "../middleware/cache.js";
+import { ObjectId } from "mongodb";
 
 const socketToRoom = new Map<string, string>();
 
@@ -108,7 +109,7 @@ export const initSockets = (io: Server) => {
 
       // ensures user and room exist
       const user = await getUserById(userId);
-      const room = await getRoomById(roomId);
+      const room = await getRoomById(new ObjectId(roomId));
       if (!user || !room) {
         console.log("Invalid user or room");
         return;
@@ -140,7 +141,7 @@ export const initSockets = (io: Server) => {
         socket.leave(currentRoom);
         console.log(`User ${socket.id} left ${currentRoom}`);
         // removes user from room in database
-        const leftCurrentRoom = await leaveRoom(currentRoom, userId);
+        const leftCurrentRoom = await leaveRoom(new ObjectId(currentRoom), userId);
         if (leftCurrentRoom?.members.length === 0) {
           scheduleRoomArchive(currentRoom, leftCurrentRoom.lastUserLeftAt);
         }
@@ -172,8 +173,8 @@ export const initSockets = (io: Server) => {
 
       // adds user to room in database
       const result = room.isPrivate
-        ? await joinPrivateRoom(roomId, userId, inviteCode || "")
-        : await joinPublicRoom(roomId, userId);
+        ? await joinPrivateRoom(new ObjectId(roomId), userId, inviteCode || "")
+        : await joinPublicRoom(new ObjectId(roomId), userId);
       if (!result) {
         console.log("Failed to join room");
         socket.emit("join_room_error", {
@@ -215,7 +216,7 @@ export const initSockets = (io: Server) => {
         return;
       }
       const user = await getUserById(userId);
-      const room = await getRoomById(roomId);
+      const room = await getRoomById(new ObjectId(roomId));
       if (!user || !room) {
         console.log("Invalid user or room");
         return;
@@ -228,7 +229,7 @@ export const initSockets = (io: Server) => {
         console.log("User is not in room");
         return;
       }
-      const result = await addStrokeToRoom(roomId, stroke);
+      const result = await addStrokeToRoom(new ObjectId(roomId), stroke);
       await invalidateStrokeCache(roomId);
       if (!result) {
         console.log("Failed to add stroke to room");
@@ -249,7 +250,7 @@ export const initSockets = (io: Server) => {
       const roomId = socketToRoom.get(socket.id);
       const userId = socket.data.userId;
       if (!roomId || !userId) return;
-      const undoResult = await undoStrokeToRoom(roomId, userId);
+      const undoResult = await undoStrokeToRoom(new ObjectId(roomId), userId);
       await invalidateStrokeCache(roomId);
       if (!undoResult) {
         console.log("Failed to undo stroke");
@@ -286,7 +287,7 @@ export const initSockets = (io: Server) => {
 
       // ensure user exists
       const user = await getUserById(userId);
-      const room = await getRoomById(roomId);
+      const room = await getRoomById(new ObjectId(roomId));
       if (!user) {
         console.log("Invalid user");
         return;
@@ -337,7 +338,7 @@ export const initSockets = (io: Server) => {
       if (!userId) return;
 
       const user = await getUserById(userId);
-      const room = await getRoomById(roomId);
+      const room = await getRoomById(new ObjectId(roomId));
       if (!user || !room || room.isActive === false) return;
       if (!room.members.some((m) => m === userId)) return;
 
@@ -454,7 +455,7 @@ export const initSockets = (io: Server) => {
         socketToRoom.delete(socket.id);
 
         // removes user from room in database
-        const leftRoom = await leaveRoom(roomId, userId);
+        const leftRoom = await leaveRoom(new ObjectId(roomId), userId);
 
         // if room is now empty, schedule archive callback
         if (leftRoom && leftRoom.members && leftRoom.members.length === 0) {

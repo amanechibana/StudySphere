@@ -1,6 +1,7 @@
 import { auth } from "../firebase/firebaseSetup";
 
 async function getAuthToken(): Promise<string | null> {
+  await auth.authStateReady();
   return auth.currentUser ? await auth.currentUser.getIdToken() : null;
 }
 

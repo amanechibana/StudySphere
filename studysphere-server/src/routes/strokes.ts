@@ -9,6 +9,7 @@ import type { Stroke } from "../types/stroke.interface.js";
 import { getUserById } from "../data/users.js";
 import { sendStrokeSchema } from "../schema/socket.js";
 import { cacheStrokes, invalidateStrokeCache } from "../middleware/cache.js";
+import { ObjectId } from "mongodb";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.get(
     //await new Promise((resolve) => setTimeout(resolve, 5000));
     console.log(`GET /strokes/${req.params.id}`);
     try {
-      const roomId = req.params.id;
+      const roomId = new ObjectId(req.params.id);
       const room = await getRoomById(roomId);
       if (!room) {
         return res.status(404).json({ error: "Room not found" });
@@ -91,7 +92,7 @@ router.post(
       if (!userId) {
         return res.status(401).json({ error: "User not found" });
       }
-      const undoResult = await undoStrokeToRoom(roomId, userId);
+      const undoResult = await undoStrokeToRoom(new ObjectId(roomId), userId);
       if (!undoResult) {
         return res.status(404).json({ error: "Failed to undo stroke" });
       }

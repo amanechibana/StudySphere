@@ -47,7 +47,7 @@ async function getMessagesByRoomId(
   before?: Date,
   limit?: number,
 ): Promise<MessagePageResult> {
-  return fetchMessagePage({ roomId }, before, limit);
+  return fetchMessagePage({ roomId: roomId.toString() }, before, limit);
 }
 
 async function getMessagesBySenderId(
@@ -61,7 +61,7 @@ async function getMessagesBySenderId(
 async function getAllMessagesByRoomId(roomId: RoomId) {
   const messagesCollection = await messages();
   return await messagesCollection
-    .find({ roomId })
+    .find({ roomId: roomId.toString() })
     .sort({ createdAt: 1 })
     .toArray();
 }

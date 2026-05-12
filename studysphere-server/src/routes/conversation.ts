@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { summarizeParamsSchema } from "../schema/conversation.js";
 import { validateParams } from "../middleware/validateFields.js";
 import type { Request, Response } from "express";
+import { ObjectId } from "mongodb";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.post(
         return res.status(400).json({ error: "roomId is required" });
       }
 
-      const messages = await getAllMessagesByRoomId(roomId);
+      const messages = await getAllMessagesByRoomId(new ObjectId(roomId));
 
       if (!messages || messages.length === 0) {
         return res.status(404).json({ error: "No messages found" });
