@@ -27,11 +27,3 @@ npm run start
 ### Client ('studysphere-client/')
 
 add client.env in this directory and rename to .env
-
-cd studysphere-client
-npm install
-npm run build
-npm run start
-
-or 
-"npm run dev" for development
