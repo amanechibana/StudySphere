@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import useAuthStore from "../stores/authStore";
 import useUserStore from "../stores/userStore";
 import { useCreateUser } from "../hooks/useUser";
-import { User } from "../api/user";
+import { User, userApi } from "../api/user";
 import { usernameSchema } from "../validation/authSchema";
 import { Coffee } from "lucide-react";
 
@@ -54,9 +54,14 @@ export default function OnboardingPage() {
         },
         onError: (err) => {
           console.error("Failed to create user: ", err);
-          if (err.message.startsWith("409"))
-            setValidationError("Username already taken");
-          else setValidationError("Something went wrong, please try again");
+          if (err.message.startsWith("409")) {
+            userApi.getMe().then((existingUser) => {
+              setUser(existingUser);
+              router.push("/rooms");
+            }).catch(() => setValidationError("Something went wrong, please try again"));
+          } else {
+            setValidationError("Something went wrong, please try again");
+          }
         },
       },
     );
