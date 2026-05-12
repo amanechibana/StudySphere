@@ -12,7 +12,7 @@ const features = [
     title: "Find focused study rooms",
     description:
       "Browse open rooms by course, topic, and vibe so you can join a session that matches the work in front of you.",
-    image: "/rooms.jpg",
+    image: "/rooms2.jpg",
   },
   {
     title: "Create your own space",
@@ -24,7 +24,7 @@ const features = [
     title: "Chat while you study",
     description:
       "Keep questions, resources, and quick check-ins in one room while the session timer keeps everyone moving.",
-    image: "/chatroom.jpg",
+    image: "/chatroom2.jpg",
   },
   {
     title: "Sketch ideas together",
@@ -98,12 +98,13 @@ export default function HomePage() {
               <div className="absolute left-0 top-6 w-[74%] overflow-hidden rounded-lg border border-border bg-surface-card shadow-sm">
                 <div className="relative aspect-[4/3]">
                   <Image
-                    src="/rooms.jpg"
+                    src="/rooms2.jpg"
                     alt="StudySphere room browsing"
                     fill
                     priority
                     className="object-cover"
                     sizes="(min-width: 1024px) 34rem, 90vw"
+                    loading="eager"
                   />
                 </div>
               </div>
