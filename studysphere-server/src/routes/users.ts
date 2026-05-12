@@ -42,7 +42,9 @@ router.get(
   async (req: Request, res: Response<User | ErrorResponse>) => {
     console.log("GET /users/me");
     try {
+      console.log("Authenticated user ID:", req.user?._id);
       const user = await getUserById(req.user!._id);
+      console.log("Fetched user:", user);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
