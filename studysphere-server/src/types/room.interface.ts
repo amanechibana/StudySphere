@@ -1,6 +1,7 @@
 import type { Stroke } from "./stroke.interface.js";
+import { ObjectId } from "mongodb";
 
-export type RoomId = string;
+export type RoomId = ObjectId;
 
 export interface Room {
   _id: RoomId;
