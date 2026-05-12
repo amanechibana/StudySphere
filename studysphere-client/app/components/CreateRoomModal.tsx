@@ -43,7 +43,7 @@ export default function CreateRoomModal({ onClose }: CreateRoomModalProps) {
           onClose();
           router.push(
             data.isPrivate
-              ? `/room/${data._id}?inviteCode=${encodeURIComponent(data.inviteCode)}`
+              ? `/room/${data._id}?inviteCode=${data.inviteCode}`
               : `/room/${data._id}`
           );
         },
