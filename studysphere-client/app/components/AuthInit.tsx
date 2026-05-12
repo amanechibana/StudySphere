@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import useAuthStore from "../stores/authStore";
 import useUserStore from "../stores/userStore";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,8 +20,10 @@ export default function AuthInit() {
     pathname.startsWith("/room/") ||
     pathname === "/onboarding";
 
+  const isProtectedPathRef = useRef(isProtectedPath);
+  isProtectedPathRef.current = isProtectedPath;
+
   useEffect(() => {
-    // registers callbacks that will be used to update the user store and returns unsubscribe cleanup function
     const unsubscribe = init({
       onLogin: async () => {
         console.log("[Auth Init] Fetching user data");
@@ -43,14 +45,14 @@ export default function AuthInit() {
         clearUser();
 
         const isInitialized = useAuthStore.getState().initialized;
-        if (isInitialized && isProtectedPath) {
+        if (isInitialized && isProtectedPathRef.current) {
           router.push("/");
         }
       },
     });
 
     return unsubscribe;
-  }, [init, isProtectedPath, router, setAppUser, clearUser]);
+  }, [init, router, setAppUser, clearUser, setFetchError]);
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
