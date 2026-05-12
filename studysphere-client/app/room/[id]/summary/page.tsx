@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import { useArchivedRoom, useArchivedRoomMessages } from "../../../hooks/useRoom";
 import useUserStore from "../../../stores/userStore";
@@ -46,10 +47,11 @@ export default function RoomSummaryPage({
       <main className="w-full max-w-6xl mx-auto px-6 py-6 flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="mb-5 shrink-0">
           <Link
-            href="/rooms"
-            className="text-sm text-caramel hover:text-espresso transition-colors"
+            href="/rooms/archived"
+            className="inline-flex items-center gap-1 text-sm text-caramel hover:text-espresso transition-colors"
           >
-            ← Back to rooms
+            <ArrowLeft className="w-4 h-4" />
+            Back to archived sessions
           </Link>
           <h1 className="font-serif italic text-3xl md:text-4xl text-espresso mt-3 mb-1">
             {room.name}
@@ -99,6 +101,11 @@ export default function RoomSummaryPage({
                 </div>
                 <div className="h-px bg-border/40" />
                 <div className="flex justify-between items-center">
+                  <dt className="text-espresso-muted">Capacity</dt>
+                  <dd className="text-espresso font-medium">{room.capacity}</dd>
+                </div>
+                <div className="h-px bg-border/40" />
+                <div className="flex justify-between items-center">
                   <dt className="text-espresso-muted">Created</dt>
                   <dd className="text-espresso font-medium">
                     {new Date(room.createdAt).toLocaleDateString(undefined, {
@@ -108,8 +115,41 @@ export default function RoomSummaryPage({
                     })}
                   </dd>
                 </div>
+                {room.lastUserLeftAt && (
+                  <>
+                    <div className="h-px bg-border/40" />
+                    <div className="flex justify-between items-center">
+                      <dt className="text-espresso-muted">Session ended</dt>
+                      <dd className="text-espresso font-medium">
+                        {new Date(room.lastUserLeftAt).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </dd>
+                    </div>
+                  </>
+                )}
               </dl>
             </div>
+
+            {room.pastMembersDetails && room.pastMembersDetails.length > 0 && (
+              <div className="bg-surface-card border border-border rounded-2xl p-6">
+                <p className="text-[10px] font-semibold tracking-[0.25em] text-espresso-muted uppercase mb-4">
+                  Participants
+                </p>
+                <ul className="space-y-1.5">
+                  {room.pastMembersDetails.map(({ _id, username }) => (
+                    <li key={_id} className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-caramel/20 border border-caramel/30 flex items-center justify-center text-[10px] font-semibold text-caramel shrink-0">
+                        {username.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm text-espresso">{username}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-7 flex flex-col min-h-0">

@@ -3,6 +3,7 @@ import { ChatMessage } from "../types/chatMessage.interface";
 import useSocketStore from "../stores/socketStore";
 import { roomApi } from "../api/room";
 import useAuthStore from "../stores/authStore";
+import { sendMessageSchema } from "../validation/socketSchema";
 
 export function useChat(roomId: string) {
   const socket = useSocketStore((s) => s.socket);
@@ -57,8 +58,11 @@ export function useChat(roomId: string) {
     }
   }, [roomId, hasMore, loadingMore]);
 
-  const sendMessage = (message: string) =>
-    socket?.emit("send_message", { roomId, message });
+  const sendMessage = (message: string) => {
+    const payload = { roomId, message };
+    if (!sendMessageSchema.safeParse(payload).success) return;
+    socket?.emit("send_message", payload);
+  };
 
   return { messages, sendMessage, hasMore, loadMore, loadingMore };
 }

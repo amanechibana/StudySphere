@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Socket } from "socket.io-client";
 import { initSocket, disconnectSocket } from "../socket/socket";
+import { joinRoomSchema } from "../validation/socketSchema";
 
 interface SocketStore {
   socket: Socket | null;
@@ -14,7 +15,10 @@ const useSocketStore = create<SocketStore>((set) => ({
     const s = initSocket();
     s.auth = { token };
     s.connect();
-    s.emit("join_room", { roomId, inviteCode: inviteCode || null });
+    const payload = { roomId, inviteCode: inviteCode || null };
+    if (joinRoomSchema.safeParse(payload).success) {
+      s.emit("join_room", payload);
+    }
     set({ socket: s });
   },
   disconnect: () => {

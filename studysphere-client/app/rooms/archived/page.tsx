@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import { useArchivedRooms } from "../../hooks/useRoom";
 
@@ -40,8 +41,14 @@ export default function ArchivedRoomsPage() {
                 <h3 className="font-semibold text-espresso text-lg leading-tight">
                   {room.name}
                 </h3>
-                <span className="text-xs font-semibold tracking-wide px-2.5 py-1 rounded-full border text-espresso-muted border-border bg-background">
-                  ARCHIVED
+                <span
+                  className={`text-xs font-semibold tracking-wide px-2.5 py-1 rounded-full border ${
+                    room.isPrivate
+                      ? "text-caramel border-caramel/40 bg-caramel/10"
+                      : "text-emerald-700 border-emerald-400/40 bg-emerald-50"
+                  }`}
+                >
+                  {room.isPrivate ? "PRIVATE" : "PUBLIC"}
                 </span>
               </div>
               <div>
@@ -56,18 +63,22 @@ export default function ArchivedRoomsPage() {
                 </p>
               )}
               <div className="flex items-center justify-between mt-1">
-                <span className="text-xs text-espresso-muted">
-                  {new Date(room.createdAt).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
+                <div className="flex items-center gap-3 text-xs text-espresso-muted">
+                  {room.lastUserLeftAt && (
+                    <span>
+                      Ended {new Date(room.lastUserLeftAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  )}
+                </div>
                 <Link
                   href={`/room/${room._id}/summary`}
-                  className="text-caramel border border-caramel/40 bg-caramel/10 text-sm font-semibold px-4 py-2 rounded-lg hover:bg-caramel/20 transition-colors"
+                  className="inline-flex items-center gap-1 text-caramel border border-caramel/40 bg-caramel/10 text-sm font-semibold px-4 py-2 rounded-lg hover:bg-caramel/20 transition-colors"
                 >
-                  View summary →
+                  View summary <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>

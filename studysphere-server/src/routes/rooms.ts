@@ -81,7 +81,11 @@ router.get(
       if (!userId || !room.pastMembers?.includes(userId)) {
         return res.status(403).json({ error: "Access denied" });
       }
-      res.status(200).json(room);
+      const memberDocs = await Promise.all(room.pastMembers.map((id) => getUserById(id)));
+      const pastMembersDetails = memberDocs
+        .filter(Boolean)
+        .map((u) => ({ _id: u!._id, username: u!.username }));
+      res.status(200).json({ ...room, pastMembersDetails });
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: "Invalid room ID" });

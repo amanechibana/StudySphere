@@ -4,6 +4,7 @@ import type { Stroke, ReceiveStrokePayload } from "../types/stroke.interface";
 import useSocketStore from "../stores/socketStore";
 import useAuthStore from "../stores/authStore";
 import { strokesApi } from "../api/strokes";
+import { sendStrokeSchema } from "../validation/socketSchema";
 
 export function useCanvasSync(
   roomId: string,
@@ -50,7 +51,9 @@ export function useCanvasSync(
   }, [socket, userId, setStrokes]);
 
   function sendStroke(stroke: Stroke) {
-    socket?.emit("send_stroke", { roomId, stroke });
+    const payload = { roomId, stroke };
+    if (!sendStrokeSchema.safeParse(payload).success) return;
+    socket?.emit("send_stroke", payload);
   }
 
   function sendUndo() {

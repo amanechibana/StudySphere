@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export const inviteCodeSchema = z
+  .string()
+  .trim()
+  .min(1, "Invite code is required")
+  .length(3, "Invite code must be 3 characters")
+  .regex(/^[a-zA-Z0-9]+$/, "Invite code must be alphanumeric");
+
 export const createRoomSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
   description: z.string().trim().min(1, "Description is required").max(500, "Description is too long"),

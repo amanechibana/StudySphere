@@ -3,6 +3,7 @@ import { Room } from "../types/room.interface";
 import { useState } from "react";
 import useUserStore from "../stores/userStore";
 import { ArrowRight } from "lucide-react";
+import { inviteCodeSchema } from "../validation/roomSchema";
 
 export default function RoomCard({
   room,
@@ -14,6 +15,7 @@ export default function RoomCard({
   const { user } = useUserStore();
   const [expandedCodeRoom, setExpandedCodeRoom] = useState<string | null>(null);
   const [roomCode, setRoomCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   const isRoomOwner = user?._id === room.ownerId;
 
@@ -90,27 +92,41 @@ export default function RoomCard({
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            const result = inviteCodeSchema.safeParse(roomCode);
+            if (!result.success) {
+              setCodeError(result.error.issues[0].message);
+              return;
+            }
+            setCodeError(null);
             handleJoinRoom(room, roomCode);
           }}
-          className="flex gap-2 mt-1"
+          className="flex flex-col gap-1.5 mt-1"
         >
-          <input
-            type="text"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-            placeholder="Invite code..."
-            className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-espresso placeholder:text-border outline-none focus:border-caramel transition-colors"
-            autoFocus
-          />
-          <button
-            type="submit"
-            className="bg-caramel text-white text-sm font-semibold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
-          >
-            <div className="flex items-center gap-1">
-              Join
-              <ArrowRight className="w-4 h-4" />
-            </div>
-          </button>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={roomCode}
+              onChange={(e) => {
+                setRoomCode(e.target.value);
+                if (codeError) setCodeError(null);
+              }}
+              placeholder="Invite code..."
+              className={`flex-1 bg-surface border rounded-lg px-3 py-2 text-sm text-espresso placeholder:text-border outline-none transition-colors ${codeError ? "border-red-400 focus:border-red-400" : "border-border focus:border-caramel"}`}
+              autoFocus
+            />
+            <button
+              type="submit"
+              className="bg-caramel text-white text-sm font-semibold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              <div className="flex items-center gap-1">
+                Join
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </button>
+          </div>
+          {codeError && (
+            <p className="text-xs text-red-500">{codeError}</p>
+          )}
         </form>
       )}
     </div>

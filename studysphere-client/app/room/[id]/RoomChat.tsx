@@ -191,9 +191,13 @@ export default function RoomChat({
     }
   }, [messages]);
 
+  const MAX_LENGTH = 2000;
+  const isOverLimit = input.length > MAX_LENGTH;
+  const showCounter = input.length > MAX_LENGTH - 200;
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isOverLimit) return;
     sendMessage(input.trim());
     setInput("");
   }
@@ -280,15 +284,21 @@ export default function RoomChat({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={minimized ? "Message..." : "Type a message..."}
-            className={`flex-1 min-w-0 bg-background border border-border rounded-xl text-sm text-espresso placeholder:text-border/80 outline-none focus:border-caramel/60 transition-all duration-300 ${minimized ? "px-3 py-2" : "px-4 py-3"}`}
+            className={`flex-1 min-w-0 bg-background border rounded-xl text-sm text-espresso placeholder:text-border/80 outline-none transition-all duration-300 ${minimized ? "px-3 py-2" : "px-4 py-3"} ${isOverLimit ? "border-red-400 focus:border-red-400" : "border-border focus:border-caramel/60"}`}
           />
           <button
             type="submit"
-            className={`shrink-0 bg-espresso text-surface-card rounded-xl hover:bg-espresso-muted transition-colors duration-200 cursor-pointer active:scale-[0.97] ${minimized ? "p-2.5" : "px-5 py-3 text-sm font-medium"}`}
+            disabled={isOverLimit}
+            className={`shrink-0 bg-espresso text-surface-card rounded-xl transition-colors duration-200 active:scale-[0.97] ${minimized ? "p-2.5" : "px-5 py-3 text-sm font-medium"} ${isOverLimit ? "opacity-40 cursor-not-allowed" : "hover:bg-espresso-muted cursor-pointer"}`}
           >
             Send
           </button>
         </div>
+        {showCounter && (
+          <p className={`text-xs mt-1.5 text-right ${isOverLimit ? "text-red-500" : "text-espresso-muted/60"}`}>
+            {input.length}/{MAX_LENGTH}
+          </p>
+        )}
       </form>
     </div>
   );
