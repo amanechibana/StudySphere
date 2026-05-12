@@ -56,6 +56,7 @@ az containerapp update -n "$SERVER_APP" -g "$RG" \
     "FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL" \
     "FIREBASE_PRIVATE_KEY=$FIREBASE_PRIVATE_KEY" \
     "CLIENT_ORIGIN=$CLIENT_URL" \
+    "GROQ_API_KEY=$GROQ_API_KEY" \
   >/dev/null
 
 echo "==> updating client container app"
