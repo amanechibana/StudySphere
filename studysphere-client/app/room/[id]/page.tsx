@@ -200,9 +200,11 @@ function DetailsPanel({ room }: { room: Room }) {
   const [copied, setCopied] = useState(false);
 
   function copyInviteCode() {
-    navigator.clipboard.writeText(room.inviteCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (room.inviteCode) {
+      navigator.clipboard.writeText(room.inviteCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   }
 
   return (
