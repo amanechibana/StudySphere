@@ -111,7 +111,7 @@ const SEED_ROOMS: Room[] = [
     inviteCode: null,
     isPrivate: false,
     isActive: true,
-    capacity: 12,
+    capacity: 10,
     strokes: [],
     members: ["user_003", "user_005"],
     pastMembers: ["user_003", "user_005"],
