@@ -10,7 +10,6 @@ export const createRoomBodySchema = z
     description: z.string().trim().min(1, "description is required").max(500, "description is too long"),
     course: z.string().trim().min(1, "course is required").max(100, "course is too long"),
     ownerId: z.string().trim().min(1, "ownerId is required").max(100, "ownerId is too long"),
-    private: z.boolean().optional(),
     isPrivate: z.boolean().optional().default(false),
     capacity: z.number().int().positive().max(10, "capacity cannot exceed 10").optional().default(6),
     members: z.array(z.string().trim().min(1)).optional().default([]),
